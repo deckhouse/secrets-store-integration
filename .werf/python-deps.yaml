@@ -1,0 +1,15 @@
+# Python deps image, required to download dependencies and put it to the final module image (bundle)
+---
+image: python-dependencies
+from: alpine:3.17
+fromCacheVersion: "2023-09-27.1"
+git:
+- add: /
+  to: /
+  includePaths:
+  - lib/python
+shell:
+  beforeInstall:
+  - apk add --no-cache python3 py3-pip
+  setup:
+  - pip3 install -r /lib/python/requirements.txt -t /lib/python/dist

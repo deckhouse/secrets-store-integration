@@ -1,0 +1,214 @@
+{{- define "node_driver_registrar_resources" }}
+cpu: 10m
+memory: 15Mi
+{{- end }}
+{{- define "secrets_store_resources" }}
+cpu: 10m
+memory: 50Mi
+{{- end }}
+{{- define "liveness_probe_resources" }}
+cpu: 10m
+memory: 15Mi
+{{- end }}
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: csi-secrets-store
+  namespace: {{ include "ssi.namespace" . }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store")) | nindent 2 }}
+spec:
+  resourcePolicy:
+    containerPolicies:
+    - containerName: node-driver-registrar
+      minAllowed:
+        {{- include "node_driver_registrar_resources" . | nindent 8 }}
+      maxAllowed:
+        cpu: 100m
+        memory: 200Mi
+    - containerName: secrets-store
+      minAllowed:
+        {{- include "secrets_store_resources" . | nindent 8 }}
+      maxAllowed:
+        cpu: 100m
+        memory: 200Mi
+    - containerName: liveness-probe
+      minAllowed:
+        {{- include "liveness_probe_resources" . | nindent 8 }}
+      maxAllowed:
+        cpu: 50m
+        memory: 50Mi
+    {{- include "helm_lib_vpa_kube_rbac_proxy_resources" . | nindent 4 }}
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: DaemonSet
+    name: csi-secrets-store
+  updatePolicy:
+    updateMode: "Initial"
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: csi-secrets-store
+  namespace: {{ include "ssi.namespace" . }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
+spec:
+  selector:
+    matchLabels:
+      app: csi-secrets-store
+  template:
+    metadata:
+      labels:
+        app: csi-secrets-store
+      annotations:
+        kubectl.kubernetes.io/default-container: secrets-store
+    spec:
+      serviceAccountName: secrets-store-csi-driver
+      {{- include "ssi.imagePullSecrets" . | nindent 6 }}
+      {{- include "helm_lib_tolerations" (tuple . "any-node") | nindent 6 }}
+      {{- include "helm_lib_priority_class" (tuple . "cluster-medium") | nindent 6 }}
+      containers:
+        - name: node-driver-registrar
+          image: {{ include "helm_lib_module_image" (list . "csiNodeDriverRegistrar") }}
+          imagePullPolicy: IfNotPresent
+          {{- include "helm_lib_module_container_security_context_not_allow_privilege_escalation" . | nindent 10 }}
+          args:
+            - --v=5
+            - --csi-address=/csi/csi.sock
+            - --kubelet-registration-path=/var/lib/kubelet/plugins/csi-secrets-store/csi.sock
+          livenessProbe:
+            exec:
+              command:
+              - /csi-node-driver-registrar
+              - --kubelet-registration-path=/var/lib/kubelet/plugins/csi-secrets-store/csi.sock
+              - --mode=kubelet-registration-probe
+            initialDelaySeconds: 30
+            timeoutSeconds: 15
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+          resources:
+            requests:
+              {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
+            {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+              {{- include "node_driver_registrar_resources" . | nindent 14 }}
+            {{- end }}
+        - name: secrets-store
+          image: {{ include "helm_lib_module_image" (list . "csiSecretsStoreDriver") }}
+          imagePullPolicy: IfNotPresent
+          {{- include "helm_lib_module_container_security_context_privileged_read_only_root_filesystem" . | nindent 10}}
+          args:
+            - "--endpoint=$(CSI_ENDPOINT)"
+            - "--nodeid=$(KUBE_NODE_NAME)"
+            - "--provider-volume=/var/run/secrets-store-csi-providers"
+            - "--metrics-addr=127.0.0.1:8095"
+            - "--enable-secret-rotation=true"
+            - "--rotation-poll-interval=120s"
+            - "--provider-health-check=false"
+            - "--provider-health-check-interval=2m"
+          env:
+            - name: CSI_ENDPOINT
+              value: unix:///csi/csi.sock
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          ports:
+            - containerPort: 9808
+              name: healthz
+              protocol: TCP
+          livenessProbe:
+              failureThreshold: 5
+              httpGet:
+                path: /healthz
+                port: healthz
+              initialDelaySeconds: 30
+              timeoutSeconds: 10
+              periodSeconds: 15
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: mountpoint-dir
+              mountPath: /var/lib/kubelet/pods
+              mountPropagation: Bidirectional
+            - name: providers-dir
+              mountPath: /var/run/secrets-store-csi-providers
+          resources:
+            requests:
+              {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
+            {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+              {{- include "secrets_store_resources" . | nindent 14 }}
+            {{- end }}
+        - name: liveness-probe
+          image: {{ include "helm_lib_module_image" (list . "livenessprobe") }}
+          imagePullPolicy: IfNotPresent
+          {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
+          args:
+          - --csi-address=/csi/csi.sock
+          - --probe-timeout=3s
+          - --http-endpoint=0.0.0.0:9808
+          - -v=2
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+          resources:
+            requests:
+              {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
+            {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+              {{- include "liveness_probe_resources" . | nindent 14 }}
+            {{- end }}
+        - name: kube-rbac-proxy
+          {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
+          image: {{ include "helm_lib_module_common_image" (list $ "kubeRbacProxy") }}
+          args:
+          - "--secure-listen-address=$(KUBE_RBAC_PROXY_LISTEN_ADDRESS):9889"
+          - "--v=2"
+          - "--logtostderr=true"
+          - "--stale-cache-interval=1h30m"
+          env:
+          - name: KUBE_RBAC_PROXY_LISTEN_ADDRESS
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: KUBE_RBAC_PROXY_CONFIG
+            value: |
+              upstreams:
+              - upstream: http://127.0.0.1:8095/metrics
+                path: /metrics
+                authorization:
+                  resourceAttributes:
+                    namespace: d8-{{ $.Chart.Name }}
+                    apiGroup: apps
+                    apiVersion: v1
+                    resource: daemonsets
+                    subresource: prometheus-metrics
+                    name: csi-secrets-store
+          ports:
+          - containerPort: 9889
+            name: https-metrics
+          resources:
+            requests:
+              {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
+            {{- if not ( .Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+              {{- include "helm_lib_container_kube_rbac_proxy_resources" . | nindent 14 }}
+            {{- end }}
+      volumes:
+        - name: mountpoint-dir
+          hostPath:
+            path: /var/lib/kubelet/pods
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/csi-secrets-store/
+            type: DirectoryOrCreate
+        - name: providers-dir
+          hostPath:
+            path: /var/run/secrets-store-csi-providers
+            type: DirectoryOrCreate

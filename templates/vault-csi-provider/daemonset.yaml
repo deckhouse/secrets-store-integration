@@ -1,0 +1,136 @@
+{{- define "vault_csi_provider_resources" }}
+cpu: 10m
+memory: 50Mi
+{{- end }}
+{{- $useCustomCert := or (eq .Values.secretsStoreIntegration.connectionConfiguration "DiscoverLocalStronghold") (and .Values.secretsStoreIntegration .Values.secretsStoreIntegration.connection .Values.secretsStoreIntegration.connection.caCert) }}
+{{- $checksum_ca := "" }}
+{{- if $useCustomCert }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-csi-provider-certificates
+  namespace: {{ include "ssi.namespace" . }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider" )) | nindent 2 }}
+data:
+{{- if eq .Values.secretsStoreIntegration.connectionConfiguration "DiscoverLocalStronghold" }}
+  {{- $secret := (lookup "v1" "Secret" "d8-stronghold" "stronghold-tls").data }}
+  {{- if $secret }}
+  ca.pem: {{ print (index $secret "ca.crt") }}
+  {{- $checksum_ca = (index $secret "ca.crt" | sha256sum) }}
+  {{- end }}
+{{- else }}
+  ca.pem: {{ .Values.secretsStoreIntegration.connection.caCert | b64enc }}
+  {{- $checksum_ca = (.Values.secretsStoreIntegration.connection.caCert | sha256sum) }}
+{{- end }}
+{{- end }}
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: vault-csi-provider
+  namespace: {{ include "ssi.namespace" . }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider")) | nindent 2 }}
+spec:
+  resourcePolicy:
+    containerPolicies:
+    - containerName: vault-csi-provider
+      minAllowed:
+        {{- include "vault_csi_provider_resources" . | nindent 8 }}
+      maxAllowed:
+        cpu: 100m
+        memory: 200Mi
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: DaemonSet
+    name: vault-csi-provider
+  updatePolicy:
+    updateMode: "Initial"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vault-csi-provider
+  namespace: {{ include "ssi.namespace" . }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider" )) | nindent 2 }}
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vault-csi-provider
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vault-csi-provider
+      annotations:
+      {{- if $useCustomCert }}
+        checksum/ca: {{ $checksum_ca }}
+      {{- end }}
+    spec:
+      serviceAccountName: vault-csi-provider
+      {{- include "ssi.imagePullSecrets" . | nindent 6 }}
+      {{- include "helm_lib_tolerations" (tuple . "any-node") | nindent 6 }}
+      {{- include "helm_lib_priority_class" (tuple . "cluster-medium") | nindent 6 }}
+      containers:
+        - name: vault-csi-provider
+          image: {{ include "helm_lib_module_image" (list . "vaultCsiProvider") }}
+          imagePullPolicy: IfNotPresent
+          env:
+          {{- if $useCustomCert }}
+          - name: VAULT_CACERT
+            value: "/certificates/ca.pem"
+          {{- end }}
+          {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
+          args:
+            {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "Manual" }}
+            - -vault-addr={{ .Values.secretsStoreIntegration.connection.url }}
+            - -vault-mount={{ .Values.secretsStoreIntegration.connection.authPath }}
+            {{- else }}
+            - -vault-addr=https://stronghold.d8-stronghold.svc:8300
+            - -vault-mount=kubernetes_local
+            {{- end }}
+            - -endpoint=/provider/vault.sock
+            - -debug=false
+          resources:
+            requests:
+              {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
+            {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+              {{- include "vault_csi_provider_resources" . | nindent 14 }}
+            {{- end }}
+          volumeMounts:
+            - name: providervol
+              mountPath: "/provider"
+          {{- if $useCustomCert }}
+            - name: certificates
+              mountPath: "/certificates"
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: "/health/ready"
+              port: 8080
+              scheme: "HTTP"
+            failureThreshold: 2
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: "/health/ready"
+              port: 8080
+              scheme: "HTTP"
+            failureThreshold: 2
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+      volumes:
+        - name: providervol
+          hostPath:
+            path: "/var/run/secrets-store-csi-providers"
+        {{- if $useCustomCert }}
+        - name: certificates
+          secret:
+            secretName: vault-csi-provider-certificates
+        {{- end }}
