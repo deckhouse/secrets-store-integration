@@ -48,11 +48,18 @@ description: "Модуль secrets-store-integration реализует инте
 <td>Реализовано</td>
 </tr>
 <tr>
-<td>Инъекция entrypoint</td>
+<td><a style="color: #fff;" href="#вариант-3-инъекция-entrypoint">Инъекция entrypoint</a></td>
 <td>Один под на каждую ноду (daemonset)</td>
 <td>Секреты доставляются из хранилища в момент запуска приложения в виде переменных окружения</td>
 <td>Не хранится</td>
 <td>В процессе реализации</td>
+</tr>
+<tr>
+<td><a style="color: #fff;" href="#вариант-4-доставка-секретов-через-механизмы-Kubernetes">Секреты Kubernetes</a></td>
+<td>Одно приложение на кластер (deployment)</td>
+<td><ul><li>Из дискового тома (как файл)</li><li>Из переменной окружения</li></ul></td>
+<td>Хранится в Secrets</td>
+<td>Планируется</td>
 </tr>
 <tr>
 <td><a style="color: #A9A9A9; font-style: italic;" href="#справочно-инжектор-vault-agent">Инжектор vault-agent</a></td>
@@ -60,13 +67,6 @@ description: "Модуль secrets-store-integration реализует инте
 <td style="color: #A9A9A9; font-style: italic;">Из дискового тома (как файл)</td>
 <td style="color: #A9A9A9; font-style: italic;">Не хранится</td>
 <td style="color: #A9A9A9; font-style: italic;"><sup><b>*</b></sup>Не будет реализовано</td>
-</tr>
-<tr>
-<td><a style="color: #fff;" href="#вариант-3-доставка-секретов-через-механизмы-Kubernetes">Секреты Kubernetes</a></td>
-<td>Одно приложение на кластер (deployment)</td>
-<td><ul><li>Из дискового тома (как файл)</li><li>Из переменной окружения</li></ul></td>
-<td>Хранится в Secrets</td>
-<td>Планируется</td>
 </tr>
 </tbody>
 </table>

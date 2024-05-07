@@ -47,18 +47,11 @@ There are several ways to deliver secrets to an application from vault-compatibl
 <td>Implemented</td>
 </tr>
 <tr>
-<td><a style="color: #fff;" href="#option-3-">Entrypoint injection</a></td>
+<td><a style="color: #fff;" href="#option-3-entrypoint-injection">Entrypoint injection</a></td>
 <td>One app for whole cluster (deployment)</td>
 <td>Secrets are delivered as environment variables during application start</td>
 <td>Is not stored</td>
 <td>In the process of implementation</td>
-</tr>
-<tr>
-<td><a style="color: #A9A9A9; font-style: italic;" href="#for-reference-vault-agent-injector">Vault-agent Injector</a></td>
-<td style="color: #A9A9A9; font-style: italic;">One agent per one pod (sidecar)</td>
-<td style="color: #A9A9A9; font-style: italic;">From disk volume (as a file)</td>
-<td style="color: #A9A9A9; font-style: italic;">Is not stored</td>
-<td style="color: #A9A9A9; font-style: italic;"><sup><b>*</b></sup>No plans to implement</td>
 </tr>
 <tr>
 <td><a style="color: #fff;" href="#option-4-delivering-secrets-through-Kubernetes-mechanisms">Kubernetes Secrets</a></td>
@@ -66,6 +59,13 @@ There are several ways to deliver secrets to an application from vault-compatibl
 <td><ul><li>From disk volume (as a file)</li><li>From environment variable</li></ul></td>
 <td>Stored as a Kubernetes Secret</td>
 <td>Planned for implementation and release</td>
+</tr>
+<tr>
+<td><a style="color: #A9A9A9; font-style: italic;" href="#for-reference-vault-agent-injector">Vault-agent Injector</a></td>
+<td style="color: #A9A9A9; font-style: italic;">One agent per one pod (sidecar)</td>
+<td style="color: #A9A9A9; font-style: italic;">From disk volume (as a file)</td>
+<td style="color: #A9A9A9; font-style: italic;">Is not stored</td>
+<td style="color: #A9A9A9; font-style: italic;"><sup><b>*</b></sup>No plans to implement</td>
 </tr>
 </tbody>
 </table>
