@@ -22,6 +22,7 @@ There are several ways to deliver secrets to an application from vault-compatibl
 3. The storage is accessed by the layering application, and your application gets access to the secrets from the environment variables.
 *Recommendation:* If you can't read from files, you can use this option, but it is NOT secure, because the secret data is stored in Kubernetes (and etcd, so it can potentially be read on any node in the cluster).
 
+<table>
 <thead>
 <tr>
 <th>How secrets are being delivered?</th>
