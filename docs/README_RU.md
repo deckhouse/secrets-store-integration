@@ -34,28 +34,28 @@ description: "Модуль secrets-store-integration реализует инте
 </thead>
 <tbody>
 <tr>
-<td><a style="color: #fff;" href=#вариант-1-получение-секретов-самим-приложением">Приложение</a></td>
+<td><a style="color: ##0066FF;" href=#вариант-1-получение-секретов-самим-приложением">Приложение</a></td>
 <td>Не меняется</td>
 <td>Напрямую из хранилища секретов</td>
 <td>Не хранится</td>
 <td>Реализовано</td>
 </tr>
 <tr>
-<td><a style="color: #fff;" href="#механизм-csi">Механизм CSI</a></td>
+<td><a style="color: ##0066FF;" href="#механизм-csi">Механизм CSI</a></td>
 <td>Два пода на каждую ноду (daemonset)</td>
 <td><ul><li>Из дискового тома (как файл)</li><li>Из переменной окружения</li></ul></td>
 <td>Не хранится</td>
 <td>Реализовано</td>
 </tr>
 <tr>
-<td><a style="color: #fff;" href="#вариант-3-инъекция-entrypoint">Инъекция entrypoint</a></td>
+<td><a style="color: ##0066FF;" href="#вариант-3-инъекция-entrypoint">Инъекция entrypoint</a></td>
 <td>Один под на каждую ноду (daemonset)</td>
 <td>Секреты доставляются из хранилища в момент запуска приложения в виде переменных окружения</td>
 <td>Не хранится</td>
 <td>В процессе реализации</td>
 </tr>
 <tr>
-<td><a style="color: #fff;" href="#вариант-4-доставка-секретов-через-механизмы-Kubernetes">Секреты Kubernetes</a></td>
+<td><a style="color: ##0066FF;" href="#вариант-4-доставка-секретов-через-механизмы-Kubernetes">Секреты Kubernetes</a></td>
 <td>Одно приложение на кластер (deployment)</td>
 <td><ul><li>Из дискового тома (как файл)</li><li>Из переменной окружения</li></ul></td>
 <td>Хранится в Secrets</td>

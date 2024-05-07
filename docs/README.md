@@ -33,28 +33,28 @@ There are several ways to deliver secrets to an application from vault-compatibl
 </thead>
 <tbody>
 <tr>
-<td><a style="color: #fff;" href="#option-1-get-the-secrets-from-the-app-itself">App</a></td>
+<td><a style="color: ##0066FF;" href="#option-1-get-the-secrets-from-the-app-itself">App</a></td>
 <td>Doesn't change</td>
 <td>Directly from secrets store</td>
 <td>Is not stored</td>
 <td>Implemented</td>
 </tr>
 <tr>
-<td><a style="color: #fff;" href="#CSI-interface">CSI Interface</a></td>
+<td><a style="color: ##0066FF;" href="#CSI-interface">CSI Interface</a></td>
 <td>Two pods per node (daemonset)</td>
 <td><ul><li>From disk volume (as a file)</li><li>From environment variable</li></ul></td>
 <td>Is not stored</td>
 <td>Implemented</td>
 </tr>
 <tr>
-<td><a style="color: #fff;" href="#option-3-entrypoint-injection">Entrypoint injection</a></td>
+<td><a style="color: ##0066FF;" href="#option-3-entrypoint-injection">Entrypoint injection</a></td>
 <td>One app for whole cluster (deployment)</td>
 <td>Secrets are delivered as environment variables during application start</td>
 <td>Is not stored</td>
 <td>In the process of implementation</td>
 </tr>
 <tr>
-<td><a style="color: #fff;" href="#option-4-delivering-secrets-through-Kubernetes-mechanisms">Kubernetes Secrets</a></td>
+<td><a style="color: ##0066FF;" href="#option-4-delivering-secrets-through-Kubernetes-mechanisms">Kubernetes Secrets</a></td>
 <td>One app for whole cluster (deployment)</td>
 <td><ul><li>From disk volume (as a file)</li><li>From environment variable</li></ul></td>
 <td>Stored as a Kubernetes Secret</td>
