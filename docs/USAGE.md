@@ -5,7 +5,7 @@ description: Usage of the secrets-store-integration Deckhouse module.
 
 ## How to set up the module for work with Deckhouse Stronghold
 
-To automatically set up the secrets-store-integration module for work with [Deckhouse Stronghold](../../stronghold/ you need to [turn on](../../stronghold/stable/usage.html#%D0%BA%D0%B0%D0%BA-%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C) the Stronghold module previously.
+To automatically set up the secrets-store-integration module for work with [Deckhouse Stronghold](../../stronghold/) you need to [turn on](../../stronghold/stable/usage.html#how-to-enable-the-module) the Stronghold module previously.
 
 After that just apply the ModuleConfig:
 
