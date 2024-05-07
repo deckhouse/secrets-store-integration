@@ -41,7 +41,7 @@ There are several ways to deliver secrets to an application from vault-compatibl
 <td>Implemented</td>
 </tr>
 <tr>
-<td><a style="color: ##0066FF;" href="#CSI-interface">CSI Interface</a></td>
+<td><a style="color: ##0066FF;" href="#csi-interface">CSI Interface</a></td>
 <td>Two pods per node (daemonset)</td>
 <td><ul><li>From disk volume (as a file)</li><li>From environment variable</li></ul></td>
 <td>Is not stored</td>
@@ -55,7 +55,7 @@ There are several ways to deliver secrets to an application from vault-compatibl
 <td>In the process of implementation</td>
 </tr>
 <tr>
-<td><a style="color: ##0066FF;" href="#option-4-delivering-secrets-through-Kubernetes-mechanisms">Kubernetes Secrets</a></td>
+<td><a style="color: ##0066FF;" href="#option-4-delivering-secrets-through-kubernetes-mechanisms">Kubernetes Secrets</a></td>
 <td>One app for whole cluster (deployment)</td>
 <td><ul><li>From disk volume (as a file)</li><li>From environment variable</li></ul></td>
 <td>Stored as a Kubernetes Secret</td>

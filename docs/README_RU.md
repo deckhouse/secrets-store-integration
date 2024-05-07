@@ -34,7 +34,7 @@ description: "Модуль secrets-store-integration реализует инте
 </thead>
 <tbody>
 <tr>
-<td><a style="color: ##0066FF;" href=#вариант-1-получение-секретов-самим-приложением">Приложение</a></td>
+<td><a style="color: ##0066FF;" href="#вариант-1-получение-секретов-самим-приложением">Приложение</a></td>
 <td>Не меняется</td>
 <td>Напрямую из хранилища секретов</td>
 <td>Не хранится</td>
@@ -55,7 +55,7 @@ description: "Модуль secrets-store-integration реализует инте
 <td>В процессе реализации</td>
 </tr>
 <tr>
-<td><a style="color: ##0066FF;" href="#вариант-4-доставка-секретов-через-механизмы-Kubernetes">Секреты Kubernetes</a></td>
+<td><a style="color: ##0066FF;" href="#вариант-4-доставка-секретов-через-механизмы-kubernetes">Секреты Kubernetes</a></td>
 <td>Одно приложение на кластер (deployment)</td>
 <td><ul><li>Из дискового тома (как файл)</li><li>Из переменной окружения</li></ul></td>
 <td>Хранится в Secrets</td>
