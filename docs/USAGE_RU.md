@@ -52,89 +52,193 @@ spec:
 
 **Крайне рекомендуется задавать переменную caCert. Если она не задана, будет использовано содержимое системного ca-certificates.**
 
-Для доставки секретов в приложение нужно использовать CustomResource “SecretStoreImport”.
+### ВАЖНО
 
-## Монтирование секрета из хранилища в качестве файла в контейнер:
+Для использования иструкций по инжектированию секретов из примеров ниже вам понадобится:
+
+1. Создать в Stronhold секрет типа kv2 по пути `secret/myapp` и поместить туда значения `DB_USER` и `DB_PASS`
+2. Создать в Stronhold политику, разрешающую чтение секретов по пути `secret/myapp`
+3. Создать в Stronhold роль `myapp` для сервис-аккаунта `myapp` в неймспейсе `my-namespace` и привязать к ней созданную ранее политику
+
+## Инжектирование переменных окружения из Stronghold:
 
 Создадим неймспейс
 
 ```bash
-kubectl create namespace my-namespace1
+kubectl create namespace my-namespace
 ```
 
-Создадим CustomResource SecretsStoreImport с названием “python-backend”:
+Создадим ServiceAccount с названием `myapp`:
+
+```bash
+kubectl -n my-namespace create serviceaccount myapp
+```
+
+Создадим под с названием `myapp1`, который подключит все переменные из хранилища по пути `secret/data/myapp`:
+
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: myapp1
+  namespace: my-namespace
+  annotations:
+    stronghold.deckhouse.io/env-from-path: secret/data/myapp
+spec:
+  serviceAccountName: myapp
+  containers:
+  - image: alpine:3.20
+    name: myapp
+    command:
+    - sh
+    - -c
+    - while printenv; do sleep 5; done
+```
+
+Применим его:
+
+```bash
+kubectl create --filename myapp1.yaml
+```
+
+Проверим логи пода после его запуска, мы должны увидеть все переменные из `secret/data/myapp`:
+
+```bash
+kubectl -n my-namespace logs myapp1
+```
+
+Удалим под
+
+```bash
+kubectl -n my-namespace delete pod myapp1 --force
+```
+
+Создадим тестовый под с названием `myapp2`, который подключит требуемые переменные из хранилища по шаблону:
+
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: myapp2
+  namespace: my-namespace
+spec:
+  serviceAccountName: myapp
+  containers:
+  - image: alpine:3.20
+    env:
+    - name: DB_USER
+      value: stronghold:secret/data/myapp#DB_USER
+    - name: DB_PASS
+      value: stronghold:secret/data/myapp#DB_PASS
+    name: myapp
+    command:
+    - sh
+    - -c
+    - while printenv; do sleep 5; done
+```
+
+Применим его:
+
+```bash
+kubectl create --filename myapp2.yaml
+```
+
+Проверим логи пода после его запуска, мы должны увидеть переменные из `secret/data/myapp`:
+
+```bash
+kubectl -n my-namespace logs myapp2
+```
+
+Удалим под
+
+```bash
+kubectl -n my-namespace delete pod myapp2 --force
+```
+
+## Монтирование секрета из хранилища в качестве файла в контейнер:
+
+Для доставки секретов в приложение нужно использовать CustomResource “SecretStoreImport”.
+
+Создадим неймспейс
+
+```bash
+kubectl create namespace my-namespace
+```
+
+Создадим CustomResource SecretsStoreImport с названием “myapp”:
 
 ```yaml
 apiVersion: deckhouse.io/v1alpha1
 kind: SecretsStoreImport
 metadata:
-  name: python-backend
-  namespace: my-namespace1
+  name: myapp
+  namespace: my-namespace
 spec:
   type: CSI
-  role: my-namespace1_backend
+  role: myapp
   files:
     - name: "db-password"
       source:
-        path: "secret/data/database-for-python-app"
-        key: "password"
+        path: "secret/data/myapp"
+        key: "DB_PASS"
 ```
 
 Применим его:
 
 ```bash
-kubectl apply --filename python-backend-secrets-store-import.yaml
+kubectl create --filename myapp-secrets-store-import.yaml
 ```
 
-Создадим ServiceAccount с названием “backend-sa”:
+Создадим ServiceAccount с названием `myapp`:
 
 ```bash
-kubectl -n my-namespace1 create serviceaccount backend-sa
+kubectl -n my-namespace create serviceaccount myapp
 ```
 
-Создадим тестовый деплоймент с названием “backend”, который запускает под с доступом к нужному секрету в хранилище:
+Создадим тестовый под с названием `myapp3`, который подключит требуемые переменные из хранилища в виде файла:
 
 ```yaml
-apiVersion: apps/v1
-kind: Deployment
+kind: Pod
+apiVersion: v1
 metadata:
-  name: backend
-  namespace: my-namespace1
-  labels:
-    app: backend
+  name: myapp3
+  namespace: my-namespace
 spec:
-  selector:
-    matchLabels:
-      app: backend
-  template:
-    metadata:
-      labels:
-        app: backend
-    spec:
-      serviceAccountName: backend-sa
-      containers:
-      - image: some/app:0.0.1
-        name: backend
-        volumeMounts:
-        - name: secrets
-          mountPath: "/mnt/secrets"
-      volumes:
-      - name: secrets
-        csi:
-          driver: secrets-store.csi.deckhouse.io
-          volumeAttributes:
-            secretsStoreImport: "python-backend"
+  serviceAccountName: myapp
+  containers:
+  - image: alpine:3.20
+    name: myapp
+    command:
+    - sh
+    - -c
+    - while cat /mnt/secrets/db-password; do sleep 5; done
+    name: backend
+    volumeMounts:
+    - name: secrets
+      mountPath: "/mnt/secrets"
+  volumes:
+  - name: secrets
+    csi:
+      driver: secrets-store.csi.deckhouse.io
+      volumeAttributes:
+        secretsStoreImport: "myapp"
 ```
 
 Применим его:
 
 ```bash
-kubectl apply --filename backend-deployment.yaml
+kubectl create --filename myapp3.yaml
 ```
 
-Проверим наличие секрета в поде после его запуска:
+Проверим логи пода после его запуска, мы должны содержимое файла `/mnt/secrets/db-password`:
 
 ```bash
-kubectl exec backend -- cat /mnt/secrets/db-password
+kubectl -n my-namespace logs myapp3
+```
+
+Удалим под
+
+```bash
+kubectl -n my-namespace delete pod myapp3 --force
 ```
 
