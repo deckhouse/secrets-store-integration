@@ -205,6 +205,11 @@ func main() {
 
 		os.Exit(1)
 	}
+
+	if len(os.Args) == 2 && os.Args[1] == "--dummy-run" { //check binary can run on node
+		os.Exit(0)
+	}
+
 	if len(os.Args) == 2 && os.Args[1] == "--self-copy" {
 		source, err := os.Open("/bin/env-injector") //open the source file
 		if err != nil {
