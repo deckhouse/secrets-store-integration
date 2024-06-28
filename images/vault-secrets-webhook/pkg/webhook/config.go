@@ -178,9 +178,9 @@ func getPullPolicy(pullPolicyStr string) corev1.PullPolicy {
 func SetConfigDefaults() {
 	viper.SetDefault("env_injector_image", "trublast/env-injector:v0.0.1")
 	viper.SetDefault("env_injector_pull_policy", string(corev1.PullIfNotPresent))
-	// viper.SetDefault("addr", "https://stronghold.d8-stronghold:8200")
+	viper.SetDefault("addr", "https://stronghold.d8-stronghold:8200")
 	viper.SetDefault("tls_skip_verify", "false")
-	// viper.SetDefault("auth_path", "kubernetes_local")
+	viper.SetDefault("auth_path", "kubernetes_local")
 	viper.SetDefault("auth_method", "jwt")
 	viper.SetDefault("role", "")
 	viper.SetDefault("tls_secret", "")
