@@ -94,7 +94,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: "stronghold:secrets",
+								Value: "secret-store:secrets",
 							},
 						},
 					},
@@ -109,7 +109,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"/bin/bash"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "stronghold-env", MountPath: "/vault/"}},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: "stronghold:secrets"},
+						{Name: "myvar", Value: "secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: "jwt"},
@@ -143,7 +143,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: ">>stronghold:secrets",
+								Value: ">>secret-store:secrets",
 							},
 						},
 					},
@@ -158,7 +158,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"/bin/bash"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "stronghold-env", MountPath: "/vault/"}},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: ">>stronghold:secrets"},
+						{Name: "myvar", Value: ">>secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: "jwt"},
@@ -194,7 +194,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: ">>stronghold:secrets",
+								Value: ">>secret-store:secrets",
 							},
 						},
 					},
@@ -209,7 +209,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"myEntryPoint"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "stronghold-env", MountPath: "/vault/"}},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: ">>stronghold:secrets"},
+						{Name: "myvar", Value: ">>secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: "jwt"},
@@ -250,7 +250,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: "stronghold:secrets",
+								Value: "secret-store:secrets",
 							},
 						},
 					},
@@ -274,7 +274,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						},
 					},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: "stronghold:secrets"},
+						{Name: "myvar", Value: "secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: ""},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: ""},
@@ -315,7 +315,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: "stronghold:secrets",
+								Value: "secret-store:secrets",
 							},
 						},
 					},
@@ -339,7 +339,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						},
 					},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: "stronghold:secrets"},
+						{Name: "myvar", Value: "secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: ""},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: ""},
@@ -380,7 +380,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: "stronghold:secrets",
+								Value: "secret-store:secrets",
 							},
 						},
 					},
@@ -404,7 +404,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						},
 					},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: "stronghold:secrets"},
+						{Name: "myvar", Value: "secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: ""},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: ""},
@@ -440,7 +440,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: ">>stronghold:secrets",
+								Value: ">>secret-store:secrets",
 							},
 						},
 					},
@@ -455,7 +455,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"myCmd"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "stronghold-env", MountPath: "/vault/"}},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: ">>stronghold:secrets"},
+						{Name: "myvar", Value: ">>secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: "jwt"},
@@ -517,7 +517,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: "stronghold:secrets",
+								Value: "secret-store:secrets",
 							},
 						},
 					},
@@ -532,7 +532,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"/bin/bash"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "stronghold-env", MountPath: "/vault/"}},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: "stronghold:secrets"},
+						{Name: "myvar", Value: "secret-store:secrets"},
 						{Name: "VAULT_ADDR", Value: "addr"},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: "jwt"},
@@ -567,7 +567,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: "scheme://${stronghold:secret/data/account#username}:${stronghold:secret/data/account#password}@127.0.0.1:8080",
+								Value: "scheme://${secret-store:secret/data/account#username}:${secret-store:secret/data/account#password}@127.0.0.1:8080",
 							},
 						},
 					},
@@ -582,7 +582,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Args:         []string{"/bin/bash"},
 					VolumeMounts: []corev1.VolumeMount{{Name: "stronghold-env", MountPath: "/vault/"}},
 					Env: []corev1.EnvVar{
-						{Name: "myvar", Value: "scheme://${stronghold:secret/data/account#username}:${stronghold:secret/data/account#password}@127.0.0.1:8080"},
+						{Name: "myvar", Value: "scheme://${secret-store:secret/data/account#username}:${secret-store:secret/data/account#password}@127.0.0.1:8080"},
 						{Name: "VAULT_ADDR", Value: "addr"},
 						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
 						{Name: "VAULT_AUTH_METHOD", Value: "jwt"},
@@ -616,7 +616,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 						Env: []corev1.EnvVar{
 							{
 								Name:  "myvar",
-								Value: "stronghold:secrets",
+								Value: "secret-store:secrets",
 							},
 							{
 								Name:  "VAULT_LOG_LEVEL",
@@ -648,7 +648,7 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 					Env: []corev1.EnvVar{
 						{
 							Name:  "myvar",
-							Value: "stronghold:secrets",
+							Value: "secret-store:secrets",
 						},
 						{
 							Name:  "VAULT_LOG_LEVEL",

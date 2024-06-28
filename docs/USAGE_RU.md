@@ -83,7 +83,8 @@ metadata:
   name: myapp1
   namespace: my-namespace
   annotations:
-    stronghold.deckhouse.io/env-from-path: secret/data/myapp
+    secret-store.deckhouse.io/role: "myapp"
+    secret-store.deckhouse.io/env-from-path: secret/data/myapp
 spec:
   serviceAccountName: myapp
   containers:
@@ -121,6 +122,8 @@ apiVersion: v1
 metadata:
   name: myapp2
   namespace: my-namespace
+  annotations:
+    secret-store.deckhouse.io/role: "myapp"
 spec:
   serviceAccountName: myapp
   containers:

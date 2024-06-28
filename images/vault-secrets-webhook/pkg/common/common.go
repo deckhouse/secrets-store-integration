@@ -23,43 +23,24 @@ import (
 const (
 	// Webhook annotations
 	// ref: https://bank-vaults.dev/docs/mutating-webhook/annotations/
-	PSPAllowPrivilegeEscalationAnnotation = "stronghold.deckhouse.io/psp-allow-privilege-escalation"
-	RunAsNonRootAnnotation                = "stronghold.deckhouse.io/run-as-non-root"
-	RunAsUserAnnotation                   = "stronghold.deckhouse.io/run-as-user"
-	RunAsGroupAnnotation                  = "stronghold.deckhouse.io/run-as-group"
-	ReadOnlyRootFsAnnotation              = "stronghold.deckhouse.io/readonly-root-fs"
-	RegistrySkipVerifyAnnotation          = "stronghold.deckhouse.io/registry-skip-verify"
-	MutateAnnotation                      = "stronghold.deckhouse.io/mutate"
-	MutateProbesAnnotation                = "stronghold.deckhouse.io/mutate-probes"
+	MutateProbesAnnotation                = "secret-store.deckhouse.io/mutate-probes"
 
-	EnableJSONLogAnnotation = "stronghold.deckhouse.io/enable-json-log"
-	// SecretInitJSONLogAnnotation = "stronghold.deckhouse.io/secret-init-json-log"
-	VaultEnvImageAnnotation = "stronghold.deckhouse.io/env-injector-image"
-	// SecretInitImageAnnotation = "stronghold.deckhouse.io/secret-init-image"
-	VaultEnvImagePullPolicyAnnotation = "stronghold.deckhouse.io/env-injector-image-pull-policy"
-	// SecretInitImagePullPolicyAnnotation = "stronghold.deckhouse.io/secret-init-image-pull-policy"
-
+	EnableJSONLogAnnotation = "secret-store.deckhouse.io/enable-json-log"
 	// Vault annotations
-	VaultAddrAnnotation                     = "stronghold.deckhouse.io/addr"
-	VaultRoleAnnotation                     = "stronghold.deckhouse.io/role"
-	VaultPathAnnotation                     = "stronghold.deckhouse.io/auth-path"
-	VaultSkipVerifyAnnotation               = "stronghold.deckhouse.io/tls-skip-verify"
-	VaultTLSSecretAnnotation                = "stronghold.deckhouse.io/tls-secret"
-	VaultIgnoreMissingSecretsAnnotation     = "stronghold.deckhouse.io/ignore-missing-secrets"
-	VaultClientTimeoutAnnotation            = "stronghold.deckhouse.io/client-timeout"
-	TransitKeyIDAnnotation                  = "stronghold.deckhouse.io/transit-key-id"
-	TransitPathAnnotation                   = "stronghold.deckhouse.io/transit-path"
-	VaultAuthMethodAnnotation               = "stronghold.deckhouse.io/auth-method"
-	TransitBatchSizeAnnotation              = "stronghold.deckhouse.io/transit-batch-size"
-	VaultServiceaccountAnnotation           = "stronghold.deckhouse.io/serviceaccount"
-	VaultNamespaceAnnotation                = "stronghold.deckhouse.io/namespace"
-	ServiceAccountTokenVolumeNameAnnotation = "stronghold.deckhouse.io/service-account-token-volume-name"
-	LogLevelAnnotation                      = "stronghold.deckhouse.io/log-level"
-	VaultEnvPassthroughAnnotation = "stronghold.deckhouse.io/vault-env-passthrough"
-	VaultEnvFromPathAnnotation = "stronghold.deckhouse.io/env-from-path"
+	VaultAddrAnnotation                     = "secret-store.deckhouse.io/addr"
+	VaultRoleAnnotation                     = "secret-store.deckhouse.io/role"
+	VaultPathAnnotation                     = "secret-store.deckhouse.io/auth-path"
+	VaultSkipVerifyAnnotation               = "secret-store.deckhouse.io/tls-skip-verify"
+	VaultTLSSecretAnnotation                = "secret-store.deckhouse.io/tls-secret"
+	VaultIgnoreMissingSecretsAnnotation     = "secret-store.deckhouse.io/ignore-missing-secrets"
+	VaultClientTimeoutAnnotation            = "secret-store.deckhouse.io/client-timeout"
+	VaultNamespaceAnnotation                = "secret-store.deckhouse.io/namespace"
+	ServiceAccountTokenVolumeNameAnnotation = "secret-store.deckhouse.io/service-account-token-volume-name"
+	LogLevelAnnotation                      = "secret-store.deckhouse.io/log-level"
+	VaultEnvFromPathAnnotation = "secret-store.deckhouse.io/env-from-path"
 
 )
 
 func HasVaultPrefix(value string) bool {
-	return strings.HasPrefix(value, "stronghold:") || strings.HasPrefix(value, ">>stronghold:")
+	return strings.HasPrefix(value, "secret-store:") || strings.HasPrefix(value, ">>secret-store:")
 }
