@@ -23,24 +23,24 @@ import (
 const (
 	// Webhook annotations
 	// ref: https://bank-vaults.dev/docs/mutating-webhook/annotations/
-	MutateProbesAnnotation                = "secret-store.deckhouse.io/mutate-probes"
+	MutateProbesAnnotation                = "secrets-store.deckhouse.io/mutate-probes"
 
-	EnableJSONLogAnnotation = "secret-store.deckhouse.io/enable-json-log"
+	EnableJSONLogAnnotation = "secrets-store.deckhouse.io/enable-json-log"
 	// Vault annotations
-	VaultAddrAnnotation                     = "secret-store.deckhouse.io/addr"
-	VaultRoleAnnotation                     = "secret-store.deckhouse.io/role"
-	VaultPathAnnotation                     = "secret-store.deckhouse.io/auth-path"
-	VaultSkipVerifyAnnotation               = "secret-store.deckhouse.io/tls-skip-verify"
-	VaultTLSSecretAnnotation                = "secret-store.deckhouse.io/tls-secret"
-	VaultIgnoreMissingSecretsAnnotation     = "secret-store.deckhouse.io/ignore-missing-secrets"
-	VaultClientTimeoutAnnotation            = "secret-store.deckhouse.io/client-timeout"
-	VaultNamespaceAnnotation                = "secret-store.deckhouse.io/namespace"
-	ServiceAccountTokenVolumeNameAnnotation = "secret-store.deckhouse.io/service-account-token-volume-name"
-	LogLevelAnnotation                      = "secret-store.deckhouse.io/log-level"
-	VaultEnvFromPathAnnotation = "secret-store.deckhouse.io/env-from-path"
+	VaultAddrAnnotation                     = "secrets-store.deckhouse.io/addr"
+	VaultRoleAnnotation                     = "secrets-store.deckhouse.io/role"
+	VaultPathAnnotation                     = "secrets-store.deckhouse.io/auth-path"
+	VaultSkipVerifyAnnotation               = "secrets-store.deckhouse.io/tls-skip-verify"
+	VaultTLSSecretAnnotation                = "secrets-store.deckhouse.io/tls-secret"
+	VaultIgnoreMissingSecretsAnnotation     = "secrets-store.deckhouse.io/ignore-missing-secrets"
+	VaultClientTimeoutAnnotation            = "secrets-store.deckhouse.io/client-timeout"
+	VaultNamespaceAnnotation                = "secrets-store.deckhouse.io/namespace"
+	ServiceAccountTokenVolumeNameAnnotation = "secrets-store.deckhouse.io/service-account-token-volume-name"
+	LogLevelAnnotation                      = "secrets-store.deckhouse.io/log-level"
+	VaultEnvFromPathAnnotation = "secrets-store.deckhouse.io/env-from-path"
 
 )
 
 func HasVaultPrefix(value string) bool {
-	return strings.HasPrefix(value, "secret-store:") || strings.HasPrefix(value, ">>secret-store:")
+	return strings.HasPrefix(value, "secrets-store:") || strings.HasPrefix(value, ">>secrets-store:")
 }

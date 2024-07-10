@@ -52,27 +52,96 @@ spec:
 
 **Крайне рекомендуется задавать переменную caCert. Если она не задана, будет использовано содержимое системного ca-certificates.**
 
-### ВАЖНО
+## Подготовка тестового окружения
 
 Для использования иструкций по инжектированию секретов из примеров ниже вам понадобится:
 
 1. Создать в Stronhold секрет типа kv2 по пути `secret/myapp` и поместить туда значения `DB_USER` и `DB_PASS`
 2. Создать в Stronhold политику, разрешающую чтение секретов по пути `secret/myapp`
 3. Создать в Stronhold роль `myapp` для сервис-аккаунта `myapp` в неймспейсе `my-namespace` и привязать к ней созданную ранее политику
+4. Создать в кластере неймспейс `my-namespace`
+5. Создать в созданном неймспейсе сервис-аккаунт `myapp`
 
-## Инжектирование переменных окружения из Stronghold:
-
-Создадим неймспейс
+Пример команд, с помощью которых можно подготовить окружение
 
 ```bash
+stronghold secrets enable -path=secret -version=2 kv
+
+stronghold kv put secret/myapp DB_USER="username"
+stronghold kv put secret/myapp DB_PASS="secret-password"
+
+stronghold policy write myapp - <<EOF
+path "secret/data/myapp" {
+  capabilities = ["read"]
+}
+EOF
+
+stronghold write auth/kubernetes_local/role/myapp \
+    bound_service_account_names=myapp \
+    bound_service_account_namespaces=my-namespace \
+    policies=myapp \
+    ttl=60s
+
 kubectl create namespace my-namespace
-```
 
-Создадим ServiceAccount с названием `myapp`:
-
-```bash
 kubectl -n my-namespace create serviceaccount myapp
 ```
+
+## Инжектирование переменных окружения
+
+### Как работает
+
+При включении модуля в кластере появляется mutating-webhook, который, при наличии у пода аннотации `secrets-store.deckhouse.io/role` изменяет манифест пода,
+добавляя туда инжектор. В измененном поде добавляется инит-контейнер, который помещает из служебного образа собранный статически бинарный файл-инжектор
+в общую для всех контейнеров пода временную директорию. В остальных контейнерах оригинальные команды запуска заменяются на запуск файла-инжектора,
+который получает из Vault-совместимого хранилища необходимые данные, используя для подключения сервисный аккаунт приложения, помещает эти переменные в ENV процесса, после чего выполняет системный вызов execve, запуская оригинальную команду.
+
+Если в манифесте пода у контейнера отсутствует команда запуска, то выполняется извлечение манифеста образа из хранилица образов (реджистри),
+и команда извлекается из него.
+Для получения манифеста из приватного хранилища образов используются заданные в манифесте пода учетные данные из `imagePullSecrets`.
+
+Доступные аннотации, позволяющие изменять поведение инжектора
+| Аннотация                                        | Умолчание |  Назначение |
+|--------------------------------------------------|-----------|-------------|
+|secrets-store.deckhouse.io/role                   |           | Задает роль, с которой будет выполнено подключение к хранилищу секретов |
+|secrets-store.deckhouse.io/env-from-path          |           | Задает путь к секрету в хранилище, из которого будут извлечены все ключи и помещены в environment |
+|secrets-store.deckhouse.io/ignore-missing-secrets | false     | Запускать оригинальное приложение в случае ошибки получения секрета из хранилища |
+|secrets-store.deckhouse.io/client-timeout         | 10s       | Таймаут операции получения секретов |
+|secrets-store.deckhouse.io/mutate-probes          | false     | Инжектировать переменные окружения в пробы |
+|secrets-store.deckhouse.io/log-level              | info      | Уровень логирования |
+|secrets-store.deckhouse.io/enable-json-log        | false     | Формат логов, строка или json |
+
+Используя инжектор вы сможете задавать в манифестах пода вместо значений env шаблоны, которые будут заменяться на этапе запуска контейнера на значения из хранилища.
+
+Пример: извлечь из Vault-совместимого хранилица ключ mypassword из kv2-секрета по адресу secret/myapp
+
+```yaml
+env:
+  - name: PASSWORD
+    value: secrets-store:secret/data/myapp#mypassword
+```
+
+Пример: извлечь из Vault-совместимого хранилица ключ mypassword версии 4 из kv2-секрета по адресу secret/myapp
+
+```yaml
+env:
+  - name: PASSWORD
+    value: secrets-store:secret/data/myapp#mypassword#4
+```
+
+Шаблон может также находиться в ConfigMap или в Secret и быть подключен с помощью `envFrom`
+```yaml
+envFrom:
+  - secretRef:
+      name: app-secret-env
+  - configMapRef:
+      name: app-env
+
+```
+Инжектирование реальных секретов из Vault-совместимого хранилища выполнится только на этапе запуска приложения, в Secret и ConfigMap будут находиться шаблоны.
+
+
+### Подключение переменных из ветки хранилища (всех ключей одного секрета)
 
 Создадим под с названием `myapp1`, который подключит все переменные из хранилища по пути `secret/data/myapp`:
 
@@ -83,8 +152,8 @@ metadata:
   name: myapp1
   namespace: my-namespace
   annotations:
-    secret-store.deckhouse.io/role: "myapp"
-    secret-store.deckhouse.io/env-from-path: secret/data/myapp
+    secrets-store.deckhouse.io/role: "myapp"
+    secrets-store.deckhouse.io/env-from-path: secret/data/myapp
 spec:
   serviceAccountName: myapp
   containers:
@@ -114,6 +183,8 @@ kubectl -n my-namespace logs myapp1
 kubectl -n my-namespace delete pod myapp1 --force
 ```
 
+### Подключение явно заданных переменных из хранилища
+
 Создадим тестовый под с названием `myapp2`, который подключит требуемые переменные из хранилища по шаблону:
 
 ```yaml
@@ -123,16 +194,16 @@ metadata:
   name: myapp2
   namespace: my-namespace
   annotations:
-    secret-store.deckhouse.io/role: "myapp"
+    secrets-store.deckhouse.io/role: "myapp"
 spec:
   serviceAccountName: myapp
   containers:
   - image: alpine:3.20
     env:
     - name: DB_USER
-      value: stronghold:secret/data/myapp#DB_USER
+      value: secrets-store:secret/data/myapp#DB_USER
     - name: DB_PASS
-      value: stronghold:secret/data/myapp#DB_PASS
+      value: secrets-store:secret/data/myapp#DB_PASS
     name: myapp
     command:
     - sh
@@ -187,16 +258,6 @@ spec:
 ```
 
 Применим его:
-
-```bash
-kubectl create --filename myapp-secrets-store-import.yaml
-```
-
-Создадим ServiceAccount с названием `myapp`:
-
-```bash
-kubectl -n my-namespace create serviceaccount myapp
-```
 
 Создадим тестовый под с названием `myapp3`, который подключит требуемые переменные из хранилища в виде файла:
 
