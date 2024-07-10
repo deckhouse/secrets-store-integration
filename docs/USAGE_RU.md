@@ -67,8 +67,7 @@ spec:
 ```bash
 stronghold secrets enable -path=secret -version=2 kv
 
-stronghold kv put secret/myapp DB_USER="username"
-stronghold kv put secret/myapp DB_PASS="secret-password"
+stronghold kv put secret/myapp DB_USER="username" DB_PASS="secret-password"
 
 stronghold policy write myapp - <<EOF
 path "secret/data/myapp" {
