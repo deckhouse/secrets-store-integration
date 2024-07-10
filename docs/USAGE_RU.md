@@ -274,7 +274,7 @@ spec:
     command:
     - sh
     - -c
-    - while cat /mnt/secrets/db-password; do sleep 5; done
+    - while cat /mnt/secrets/db-password; do echo; sleep 5; done
     name: backend
     volumeMounts:
     - name: secrets
