@@ -66,7 +66,7 @@ func NewSecretInjector(config Config, client *vault.Client, renewer SecretRenewe
 	}
 }
 
-var inlineMutationRegex = regexp.MustCompile(`\${([>]{0,2}secret-store:.*?#*}?)}`)
+var inlineMutationRegex = regexp.MustCompile(`\${([>]{0,2}secrets-store:.*?#*}?)}`)
 
 func (i *SecretInjector) FetchTransitSecrets(secrets []string) (map[string][]byte, error) {
 	if len(i.config.TransitKeyID) == 0 {
@@ -204,20 +204,20 @@ func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, in
 		}
 
 		var update bool
-		if strings.HasPrefix(value, ">>secret-store:") {
+		if strings.HasPrefix(value, ">>secrets-store:") {
 			value = strings.TrimPrefix(value, ">>")
 			update = true
 		} else {
 			update = false
 		}
 
-		if !strings.HasPrefix(value, "secret-store:") {
+		if !strings.HasPrefix(value, "secrets-store:") {
 			inject(name, value)
 
 			continue
 		}
 
-		valuePath := strings.TrimPrefix(value, "secret-store:")
+		valuePath := strings.TrimPrefix(value, "secrets-store:")
 
 		// handle special case for vault:login env value
 		// namely pass through the VAULT_TOKEN received from the Vault login procedure
