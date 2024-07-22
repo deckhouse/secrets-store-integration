@@ -3,7 +3,7 @@ title: "The secrets-store-integration module: примеры"
 description: Использование модуля secrets-store-integration.
 ---
 
-## Как настроить модуль для работы c Deckhouse Stronghold
+## Настройка модуля для работы c Deckhouse Stronghold
 
 Для автоматической настройки работы модуля secrets-store-integration в связке с модулем [Deckhouse Stronghold](../../stronghold/) потребуется ранее [включенный](../../stronghold/stable/usage.html#%D0%BA%D0%B0%D0%BA-%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C) и настроенный Stronghold.
 
@@ -21,9 +21,9 @@ spec:
 
 Параметр [connectionConfiguration](../../secrets-store-integration/stable/configuration.html#parameters-connectionconfiguration) можно опустить, поскольку он стоит в значении `DiscoverLocalStronghold` по умолчанию.
 
-## Как настроить модуль для работы c внешним хранилищем
+## Настройка модуля для работы с внешним хранилищем
 
-Для работы модуля требуется предварительно настроенное хранилище секретов, совместимое с Hashicorp Vault. В хранилище предварительно должен быть настроен путь аутентификациию. Пример настройки хранилища секретом в FAQ.
+Для работы модуля требуется предварительно настроенное хранилище секретов, совместимое с Hashicorp Vault. В хранилище предварительно должен быть настроен путь аутентификации. Пример настройки хранилища секретом в FAQ.
 
 Для того, чтоб убедиться в том, что каждый API запрос зашифрован, послан и отвечен правильным адресатом, потребуется валидный публичный сертификат Certificate Authority, который используется хранилищем секретов. Такой публичный сертификат CA в PEM-формате необходимо использовать в качестве переменной caCert в конфигурации модуля.
 
@@ -228,17 +228,17 @@ kubectl -n my-namespace logs myapp2
 kubectl -n my-namespace delete pod myapp2 --force
 ```
 
-## Монтирование секрета из хранилища в качестве файла в контейнер:
+## Монтирование секрета из хранилища в качестве файла в контейнер
 
 Для доставки секретов в приложение нужно использовать CustomResource “SecretStoreImport”.
 
-Создадим неймспейс
+Создайте namespace:
 
 ```bash
 kubectl create namespace my-namespace
 ```
 
-Создадим CustomResource SecretsStoreImport с названием “myapp”:
+Создайте в кластере CustomResource _SecretsStoreImport_ с названием “myapp”:
 
 ```yaml
 apiVersion: deckhouse.io/v1alpha1
@@ -256,9 +256,7 @@ spec:
         key: "DB_PASS"
 ```
 
-Применим его:
-
-Создадим тестовый под с названием `myapp3`, который подключит требуемые переменные из хранилища в виде файла:
+Создайте в кластере тестовый под с названием `myapp3`, который подключит требуемые переменные из хранилища в виде файла:
 
 ```yaml
 kind: Pod
@@ -287,19 +285,13 @@ spec:
         secretsStoreImport: "myapp"
 ```
 
-Применим его:
-
-```bash
-kubectl create --filename myapp3.yaml
-```
-
-Проверим логи пода после его запуска, мы должны содержимое файла `/mnt/secrets/db-password`:
+Проверьте логи пода после его запуска (должно выводиться содержимое файла `/mnt/secrets/db-password`):
 
 ```bash
 kubectl -n my-namespace logs myapp3
 ```
 
-Удалим под
+Удалите под:
 
 ```bash
 kubectl -n my-namespace delete pod myapp3 --force
