@@ -3,7 +3,7 @@ title: "The secrets-store-integration module: FAQ"
 description: Hashicorp vault example configuration. Example of secret autorotation implementation.
 ---
 
-## How to set up the Hashicorp vault as a secret store for use with the secrets-store-integration module:
+## How to set up the Hashicorp Vault as a secret store for use with the secrets-store-integration module:
 
 First of all, we need a root or similiar token and the vault address.
 Root token can be obtained during new secrets store initialization.
@@ -15,8 +15,8 @@ export VAULT_ADDR=https://secretstoreexample.com
 ```
 
 In this guide we provide two ways to obtain needed result: 
-- usage of the console version of the Hashicorp Vault (Installation guide: https://developer.hashicorp.com/vault/docs/install)
-- usage of the cURL equivalent command to make a direct requests to the secrets store API
+- usage of the console version of the Hashicorp Vault (installation guide: https://developer.hashicorp.com/vault/docs/install);
+- usage of the curl equivalent command to make a direct requests to the secrets store API.
 
 Enable and create Key-Value storage:
 

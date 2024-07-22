@@ -7,7 +7,7 @@ The secrets-store-integration module implements the delivery of secrets to appli
 cluster by mounting multiple secrets, keys, and certificates stored in external secrets stores.
 
 Secrets are mounted into pods as a volume using CSI driver implementation.
-Secrets stores must be compatible with Hashicorp Vault API.
+Secrets stores must be compatible with HashiCorp Vault API.
 
 ## Delivering secrets to the applications
 
@@ -75,7 +75,7 @@ There are several ways to deliver secrets to an application from vault-compatibl
 
 ### Option #1: Get the secrets from the app itself
 
-> *Status:* The most secure option. Recommended for use if there is a possibility of application modification.
+> *Status:* the most secure option. Recommended for use if there is a possibility of application modification.
 
 The application accesses Stronghold API and requests the necessary secret via HTTPS protocol using authorization token (token from SA).
 
@@ -94,7 +94,7 @@ The application accesses Stronghold API and requests the necessary secret via HT
 
 #### CSI interface
 
-> *Status:* Secure option. Recommended for use if there is no way to modify applications.
+> *Status:* secure option. Recommended for use if there is no way to modify applications.
 
 When creating pods requesting CSI volumes, the CSI secret vault driver sends a request to Vault CSI. Vault CSI then uses the specified SecretProviderClass and ServiceAccount feed to retrieve secrets from the vault and mount them in the pod volume.
 
@@ -102,7 +102,7 @@ When creating pods requesting CSI volumes, the CSI secret vault driver sends a r
 
 In a situation where there is no way to modify the application code, then you can implement secure secret injection as an environment variable for the application. To do this, read all the files CSI has mounted in the container and define environment variables with names corresponding to the file names and values corresponding to the contents of the files. After that, run the original application.
 
-Example in bash:
+Example in Bash:
 
 ```bash
 bash -c "for file in $(ls /mnt/secrets); do export  $file=$(cat /mnt/secrets/$file); done ; exec my_original_file_to_startup"
@@ -119,13 +119,13 @@ bash -c "for file in $(ls /mnt/secrets); do export  $file=$(cat /mnt/secrets/$fi
 
 #### Environment variables delivery into the container through entrypoint injection
 
-> *Статус:* Secure option. In the process of implementation
+> *Статус:* secure option. In the process of implementation
 
 Environment variables are being delivered into the container during the application start and are located only in memory. During the first stage of implementation delivery will be made with the entrypoint injection. Afterwards, delivery mechanism will be integrated into containerd.
 
 ### Option #4: Delivering secrets through Kubernetes mechanisms
 
-> *Status:* Not a safe option, not recommended for use. No support is available, but it is planned for the future.
+> *Status:* not a safe option, not recommended for use. No support is available, but it is planned for the future.
 
 This integration method implements a Kubernetes secrets operator with a set of CRDs responsible for synchronizing secrets from Vault to Kubernetes secrets.
 
@@ -139,7 +139,7 @@ This integration method implements a Kubernetes secrets operator with a set of C
 
 ### For reference: vault-agent injector
 
-> *Status:* Has no pros compared to the CSI mechanism. No support and implementation is available or planned.
+> *Status:* has no pros compared to the CSI mechanism. No support and implementation is available or planned.
 
 When a pod is created, a mutation occurs that adds a vault-agent container. The vault-agent accesses the secret store, retrieves the secret, and places it into a shared volume on a disk that can be accessed by the application.
 

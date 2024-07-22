@@ -25,7 +25,7 @@ The [connectionConfiguration](../../secrets-store-integration/stable/configurati
 
 To operate the module, a preconfigured secrets store compatible with HashiCorp Vault is required. The store must have an authentication path configured in advance. An example of configuring the secrets store is provided in the FAQ.
 
-To ensure that each API request is encrypted, sent, and responded to by the correct recipient, a valid public Certificate Authority (CA) certificate used by the secrets store is required. You need to use such a public CA certificate in PEM format as the caCert variable in the module configuration.
+To ensure that each API request is encrypted, sent, and responded to by the correct recipient, a valid public Certificate Authority (CA) certificate used by the secrets store is required. You need to use such a public CA certificate in PEM format as the `caCert` variable in the module configuration.
 
 The following is an example module configuration for using a Vault-compatible secrets store deployed at "secretstoreexample.com" on the default TLS port, 443 TLS. Please note that you'll need to replace the variable values in the configuration with the actual values corresponding to your environment.
 
@@ -52,7 +52,7 @@ spec:
 
 To verify that every API request is encrypted, sent, and answered by the exact host, we must embed the caCert of the used Vault-compatible secrets storage in PEM format in the ModuleConfig.
 
-**It is strongly recommended to set the caCert variable, if not, the module will use the system ca-certificates.**
+**It is strongly recommended to set the `caCert` variable, if not, the module will use the system ca-certificates.**
 
 To deliver secrets to the application, use the “SecretStoreImport” CustomResource.
 
