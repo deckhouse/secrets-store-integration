@@ -92,29 +92,27 @@ kubectl -n my-namespace create serviceaccount myapp
 
 ### How it works
 
-При включении модуля в кластере появляется mutating-webhook, который при наличии у пода аннотации `secrets-store.deckhouse.io/role` изменяет манифест пода,
-добавляя туда инжектор. В измененном поде добавляется инит-контейнер, который помещает из служебного образа собранный статически бинарный файл-инжектор
-в общую для всех контейнеров пода временную директорию. В остальных контейнерах оригинальные команды запуска заменяются на запуск файла-инжектора,
-который получает из Vault-совместимого хранилища необходимые данные, используя для подключения сервисный аккаунт приложения, помещает эти переменные в ENV процесса, после чего выполняет системный вызов execve, запуская оригинальную команду.
+When the module is enabled, a mutating-webhook becomes available in the cluster. It modifies the pod manifest, adding an injector, if the pod has the `secrets-store.deckhouse.io/role` annotation An init container is added to the modified pod. Its mission is to copy a statically compiled binary injector file from a service image into a temporary directory shared by all containers in the pod. In the other containers, the original startup commands are replaced with a command that starts the injector. It then fetches the required data from a Vault-compatible storage using the application's service account, sets these variables in the process ENV, and then issues an execve system call, invoking the original command.
 
-Если в манифесте пода у контейнера отсутствует команда запуска, то выполняется извлечение манифеста образа из хранилица образов (реджистри),
-и команда извлекается из него.
-Для получения манифеста из приватного хранилища образов используются заданные в манифесте пода учетные данные из `imagePullSecrets`.
+If the container does not have a startup command in the pod manifest, the image manifest is retrieved from the image registry,
+and the command is retrieved from it.
+The credentials from `imagePullSecrets` specified in the pod manifest are used to retrieve the manifest from the private image registry.
 
-Доступные аннотации, позволяющие изменять поведение инжектора
-| Аннотация                                        | Умолчание |  Назначение |
+
+The following are the available annotations to modify the injector behavior
+| Annotation                                       | Default value |  Function |
 |--------------------------------------------------|-----------|-------------|
-|secrets-store.deckhouse.io/role                   |           | Задает роль, с которой будет выполнено подключение к хранилищу секретов |
-|secrets-store.deckhouse.io/env-from-path          |           | Задает путь к секрету в хранилище, из которого будут извлечены все ключи и помещены в environment |
-|secrets-store.deckhouse.io/ignore-missing-secrets | false     | Запускает оригинальное приложение в случае ошибки получения секрета из хранилища |
-|secrets-store.deckhouse.io/client-timeout         | 10s       | Таймаут операции получения секретов |
-|secrets-store.deckhouse.io/mutate-probes          | false     | Инжектирует переменные окружения в пробы |
-|secrets-store.deckhouse.io/log-level              | info      | Уровень логирования |
-|secrets-store.deckhouse.io/enable-json-log        | false     | Формат логов, строка или json |
+|secrets-store.deckhouse.io/role                   |           | Sets the role to be used to connect to the secret repository |
+|secrets-store.deckhouse.io/env-from-path          |           | Specifies the path to the secret in the vault to retrieve all keys from and add them to the environment |
+|secrets-store.deckhouse.io/ignore-missing-secrets | false     | Runs the original application if an attempt to retrieve a secret from the store fails |
+|secrets-store.deckhouse.io/client-timeout         | 10s       | Timeout to use for secrets retrieval |
+|secrets-store.deckhouse.io/mutate-probes          | false     | Injects environment variables into the probes |
+|secrets-store.deckhouse.io/log-level              | info      | Logging level |
+|secrets-store.deckhouse.io/enable-json-log        | false     | Log format (string or JSON) |
 
-Используя инжектор вы сможете задавать в манифестах пода вместо значений env-шаблоны, которые будут заменяться на этапе запуска контейнера на значения из хранилища.
+The injector allows you to specify env templates instead of values in the pod manifests. They will be replaced at the container startup stage with the values from the store.
 
-Пример: извлечь из Vault-совместимого хранилища ключ `mypassword` из kv2-секрета по адресу `secret/myapp`:
+For example, here's how you can retrieve the `mypassword` key from the kv2-secret at `secret/myapp` from the Vault-compatible store:
 
 ```yaml
 env:
@@ -122,7 +120,7 @@ env:
     value: secrets-store:secret/data/myapp#mypassword
 ```
 
-Пример: извлечь из Vault-совместимого хранилища ключ `mypassword` версии `4` из kv2-секрета по адресу `secret/myapp`:
+The example below retrieves the `mypassword` key version `4` from the kv2 secret at `secret/myapp` from the Vault-compatible store:
 
 ```yaml
 env:
@@ -130,7 +128,8 @@ env:
     value: secrets-store:secret/data/myapp#mypassword#4
 ```
 
-Шаблон может также находиться в ConfigMap или в Secret и быть подключен с помощью `envFrom`
+The template can also be stored in the ConfigMap or in the Secret and can be hooked up using `envFrom`:
+
 ```yaml
 envFrom:
   - secretRef:
@@ -139,8 +138,7 @@ envFrom:
       name: app-env
 
 ```
-Инжектирование реальных секретов из Vault-совместимого хранилища выполнится только на этапе запуска приложения, в Secret и ConfigMap будут находиться шаблоны.
-
+The actual secrets from the Vault-compatible store will be injected at the application startup; the Secret and ConfigMap will only contain the templates.
 
 ### Подключение переменных из ветки хранилища (всех ключей одного секрета)
 
