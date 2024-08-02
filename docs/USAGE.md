@@ -140,9 +140,9 @@ envFrom:
 ```
 The actual secrets from the Vault-compatible store will be injected at the application startup; the Secret and ConfigMap will only contain the templates.
 
-### Подключение переменных из ветки хранилища (всех ключей одного секрета)
+### Setting environment variables by specifying the path to the secret in the vault to retrieve all keys from
 
-Создадим под с названием `myapp1`, который подключит все переменные из хранилища по пути `secret/data/myapp`:
+The following is the specification of a pod named `myapp1`. In it, all the values are retrieved from the store at the `secret/data/myapp` path and stored as environment variables:
 
 ```yaml
 kind: Pod
@@ -164,27 +164,27 @@ spec:
     - while printenv; do sleep 5; done
 ```
 
-Применим его:
+Let's apply it:
 
 ```bash
 kubectl create --filename myapp1.yaml
 ```
 
-Проверим логи пода после его запуска, мы должны увидеть все переменные из `secret/data/myapp`:
+Check the pod logs after it has been successfully started. You should see all the values from `secret/data/myapp`:
 
 ```bash
 kubectl -n my-namespace logs myapp1
 ```
 
-Удалим под
+Delete the pod:
 
 ```bash
 kubectl -n my-namespace delete pod myapp1 --force
 ```
 
-### Подключение явно заданных переменных из хранилища
+### Explicitly specifying the values to be retrieved from the vault and used as environment variables
 
-Создадим тестовый под с названием `myapp2`, который подключит требуемые переменные из хранилища по шаблону:
+Below is the spec of a test pod named `myapp2`. The pod will retrieve the required values from the vault according to the template and turn them into environment variables:
 
 ```yaml
 kind: Pod
@@ -210,35 +210,35 @@ spec:
     - while printenv; do sleep 5; done
 ```
 
-Применим его:
+Apply it:
 
 ```bash
 kubectl create --filename myapp2.yaml
 ```
 
-Проверим логи пода после его запуска, мы должны увидеть переменные из `secret/data/myapp`:
+Check the pod logs after it has been successfully started. You should see the values from `secret/data/myapp` matching those in the pod specification:
 
 ```bash
 kubectl -n my-namespace logs myapp2
 ```
 
-Удалим под
+Delete the pod:
 
 ```bash
 kubectl -n my-namespace delete pod myapp2 --force
 ```
 
-## Монтирование секрета из хранилища в качестве файла в контейнер
+## Retrieving a secret from the vault and mounting it as a file in a container
 
-Для доставки секретов в приложение нужно использовать CustomResource “SecretStoreImport”.
+Use the `SecretStoreImport` CustomResource to deliver secrets to the application.
 
-Создайте namespace:
+Create a namespace:
 
 ```bash
 kubectl create namespace my-namespace
 ```
 
-Создайте в кластере CustomResource _SecretsStoreImport_ с названием “myapp”:
+Create a _SecretsStoreImport_ CustomResource named `myapp` in the cluster:
 
 ```yaml
 apiVersion: deckhouse.io/v1alpha1
@@ -256,7 +256,7 @@ spec:
         key: "DB_PASS"
 ```
 
-Создайте в кластере тестовый под с названием `myapp3`, который подключит требуемые переменные из хранилища в виде файла:
+Create a test pod in the cluster named `myapp3`. It will retrieve the required values from the vault and mount them as a file:
 
 ```yaml
 kind: Pod
@@ -285,13 +285,13 @@ spec:
         secretsStoreImport: "myapp"
 ```
 
-Проверьте логи пода после его запуска (должно выводиться содержимое файла `/mnt/secrets/db-password`):
+Check the pod logs after it has been successfully started (you should see the contents of the `/mnt/secrets/db-password` file):
 
 ```bash
 kubectl -n my-namespace logs myapp3
 ```
 
-Удалите под:
+Delete the pod:
 
 ```bash
 kubectl -n my-namespace delete pod myapp3 --force
