@@ -14,13 +14,16 @@ Note that secret stores must be compatible with the HashiCorp Vault API.
 There are several ways to deliver secrets to an application from a vault-compatible storage:
 
 1. Your application itself can access the vault.
-*Note:* This is the most secure option, but it requires an application to be modified.
+
+   > This is the most secure option, but it requires an application to be modified.
 
 2. An intermediate application retrieves secrets from the vault, and your application retrieves secrets from files created in the container.
-*Note:* Use this option if you cannot modify the application for some reason. It is less secure because the secrets are stored in files in the container. However, it is easier to implement.
+
+   > Use this option if you cannot modify the application for some reason. It is less secure because the secrets are stored in files in the container. However, it is easier to implement.
 
 3. An intermediate application retrieves secrets from the vault, and your application accesses the secrets as the environment variables.
-*Note:* If reading from files is unavailable, you can opt for this alternative. Keep in mind, however, that it is NOT secure, because the secret data is stored in Kubernetes (and etcd, so it can potentially be read on any node in the cluster).
+
+   > If reading from files is unavailable, you can opt for this alternative. Keep in mind, however, that it is NOT secure, because the secret data is stored in Kubernetes (and etcd, so it can potentially be read on any node in the cluster).
 
 <table>
 <thead>
