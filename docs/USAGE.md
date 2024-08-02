@@ -99,10 +99,10 @@ and the command is retrieved from it.
 The credentials from `imagePullSecrets` specified in the pod manifest are used to retrieve the manifest from the private image registry.
 
 
-The following are the available annotations to modify the injector behavior
+The following are the available annotations to modify the injector behavior:
 | Annotation                                       | Default value |  Function |
 |--------------------------------------------------|-----------|-------------|
-|secrets-store.deckhouse.io/role                   |           | Sets the role to be used to connect to the secret repository |
+|secrets-store.deckhouse.io/role                   |           | Sets the role to be used to connect to the secret store |
 |secrets-store.deckhouse.io/env-from-path          |           | Specifies the path to the secret in the vault to retrieve all keys from and add them to the environment |
 |secrets-store.deckhouse.io/ignore-missing-secrets | false     | Runs the original application if an attempt to retrieve a secret from the store fails |
 |secrets-store.deckhouse.io/client-timeout         | 10s       | Timeout to use for secrets retrieval |
