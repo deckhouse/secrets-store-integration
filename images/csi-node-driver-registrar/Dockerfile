@@ -1,5 +1,5 @@
-ARG BASE_GOLANG_20_ALPINE=registry.deckhouse.io/base_images/golang:1.20.5-alpine3.18
-ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
+ARG BASE_GOLANG_20_ALPINE=registry.deckhouse.io/base_images/golang:1.20.5-alpine3.18@sha256:51a47fb0851397db2f506c15c426735bc23de31177cbdd962880c0879d1906a4
+ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest@sha256:b61c8490b9de65167184c1c39b5125373b111929837aeff7184fe65ebdaee0c8
 FROM $BASE_GOLANG_20_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/kubernetes-csi/node-driver-registrar.git

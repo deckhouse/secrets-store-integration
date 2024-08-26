@@ -1,7 +1,7 @@
-ARG BASE_GOLANG_21_ALPINE=registry.deckhouse.io/base_images/golang:1.21.4-alpine3.18
-ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
+ARG BASE_GOLANG_21_ALPINE=registry.deckhouse.io/base_images/golang:1.21.4-alpine3.18@sha256:cf84f3d6882c49ea04b6478ac514a2582c8922d7e5848b43d2918fff8329f6e6
+ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest@sha256:b61c8490b9de65167184c1c39b5125373b111929837aeff7184fe65ebdaee0c8
 
-FROM alpine:3.18 as mount
+FROM alpine:3.18@sha256:5292533eb4efd4b5cf35e93b5a2b7d0e07ea193224c49446c7802c19ee4f2da5 as mount
 RUN apk add --no-cache build-base asciidoctor libcap-ng-dev\
     linux-headers bison automake autoconf libtool ncurses-dev zlib-dev linux-pam-dev python3-dev libeconf-dev utmps-dev utmps-static git
 RUN cd / && \

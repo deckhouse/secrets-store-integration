@@ -1,5 +1,5 @@
-ARG BASE_GOLANG_19_ALPINE=golang:1.20.5-alpine3.18
-ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
+ARG BASE_GOLANG_19_ALPINE=golang:1.20.5-alpine3.18@sha256:fd9d9d7194ec40a9a6ae89fcaef3e47c47de7746dd5848ab5343695dbbd09f8c
+ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest@sha256:b61c8490b9de65167184c1c39b5125373b111929837aeff7184fe65ebdaee0c8
 FROM $BASE_GOLANG_19_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/hashicorp/vault-csi-provider.git
