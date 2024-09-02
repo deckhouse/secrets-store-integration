@@ -1,7 +1,7 @@
 ARG BASE_GOLANG_21_ALPINE=registry.deckhouse.io/base_images/golang:1.21.4-alpine3.18
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
 
-FROM alpine:3.18 as mount
+FROM alpine:3.20@sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5 as mount
 RUN apk add --no-cache build-base asciidoctor libcap-ng-dev\
     linux-headers bison automake autoconf libtool ncurses-dev zlib-dev linux-pam-dev python3-dev libeconf-dev utmps-dev utmps-static git
 RUN cd / && \
