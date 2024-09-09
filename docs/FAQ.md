@@ -5,6 +5,7 @@ description: Hashicorp Vault configuration examples. Example of secret autorotat
 
 ## How to set up the Hashicorp Vault as a secret store to use with the secrets-store-integration module:
 
+{{< alert level="info">}}
 First of all, you'll need a root or similiar token and the vault address.
 You can get such a root token while initializing a new secrets store.
 
@@ -13,184 +14,204 @@ You can get such a root token while initializing a new secrets store.
 export VAULT_TOKEN=xxxxxxxxxxx
 export VAULT_ADDR=https://secretstoreexample.com
 ```
+{{< /alert >}}
 
-This guide will cover two ways to do this:
-- using the console version of HashiCorp Vault (see the installation guide: https://developer.hashicorp.com/vault/docs/install);
-- using curl to make direct requests to the secrets store API.
+> This guide will cover two ways to do this:
+>   * using the console version of HashiCorp Vault (see the [Vault installation guide](https://developer.hashicorp.com/vault/docs/install));
+>   * using curl to make direct requests to the secrets store API.
 
-Enable and create the Key-Value store:
+This section provides an example of the settings that need to be made so that the service pod can access the secret located in the Key-Value storage. The secret will be the password for the database that the Python application uses.
 
-```bash
-vault secrets enable -path=secret -version=2 kv
-```
+* Enable and create the Key-Value store:
 
-The same command as a curl HTTP request:
+  ```bash
+  vault secrets enable -path=secret -version=2 kv
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request POST \
-  --data '{"type":"kv","options":{"version":"2"}}' \
-  ${VAULT_ADDR}/v1/sys/mounts/secret
-```
+  The same command as a curl HTTP request:
 
-Set the database password as the secret value:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request POST \
+    --data '{"type":"kv","options":{"version":"2"}}' \
+    ${VAULT_ADDR}/v1/sys/mounts/secret
+  ```
 
-```bash
-vault kv put secret/database-for-python-app password="db-secret-password"
-```
+* Set the database password as the secret value:
 
-The curl equivalent of the above command:
+  ```bash
+  vault kv put secret/database-for-python-app password="db-secret-password"
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request PUT \
-  --data '{"data":{"password":"db-secret-password"}}' \
-  ${VAULT_ADDR}/v1/secret/data/database-for-python-app
-```
+  The curl equivalent of the above command:
 
-Double-check that the password has been saved successfully:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"data":{"password":"db-secret-password"}}' \
+    ${VAULT_ADDR}/v1/secret/data/database-for-python-app
+  ```
 
-```bash
-vault kv get secret/database-for-python-app
-```
+* Double-check that the password has been saved successfully:
 
-The curl equivalent of the above command:
+  ```bash
+  vault kv get secret/database-for-python-app
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  ${VAULT_ADDR}/v1/secret/data/database-for-python-app
-```
+  The curl equivalent of the above command:
 
-Allow authentication and authorization in the vault with Kubernetes API by defining the authentication path:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    ${VAULT_ADDR}/v1/secret/data/database-for-python-app
+  ```
 
-```bash
-vault auth enable -path=main-kube kubernetes
-```
+* Set the authentication path (`authPath`) and enable authentication and authorization in Vault using the Kubernetes API:
 
-The curl equivalent of the above command:
+  ```bash
+  vault auth enable -path=main-kube kubernetes
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request POST \
-  --data '{"type":"kubernetes"}' \
-  ${VAULT_ADDR}/v1/sys/auth/main-kube
-```
+  The curl equivalent of the above command:
 
-If you have more than one cluster, set the authentication path (authPath) and enable authentication and authorization in Vault using the Kubernetes API of the second cluster:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request POST \
+    --data '{"type":"kubernetes"}' \
+    ${VAULT_ADDR}/v1/sys/auth/main-kube
+  ```
 
-```bash
-vault auth enable -path=secondary-kube kubernetes
-```
+* If you have more than one cluster, set the authentication path (`authPath`) and enable authentication and authorization in Vault using the Kubernetes API of the second cluster:
 
-The curl equivalent of the above command:
+  ```bash
+  vault auth enable -path=secondary-kube kubernetes
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request POST \
-  --data '{"type":"kubernetes"}' \
-  ${VAULT_ADDR}/v1/sys/auth/secondary-kube
-```
+  The curl equivalent of the above command:
 
-Set the Kubernetes API address for each cluster (in this case, it is the K8s's API server service):
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request POST \
+    --data '{"type":"kubernetes"}' \
+    ${VAULT_ADDR}/v1/sys/auth/secondary-kube
+  ```
 
-```bash
-vault write auth/main-kube/config \
-  kubernetes_host="https://api.kube.my-deckhouse.com"
-```
+* Set the Kubernetes API address for each cluster (in this case, it is the K8s's API server service):
 
-The curl equivalent of the above command:
+  ```bash
+  vault write auth/main-kube/config \
+    kubernetes_host="https://api.kube.my-deckhouse.com"
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request PUT \
-  --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com"}' \
-  ${VAULT_ADDR}/v1/auth/main-kube/config
-```
+  The curl equivalent of the above command:
 
-```bash
-vault write auth/secondary-kube/config \
-  kubernetes_host="https://10.11.12.10:443"
-```
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com"}' \
+    ${VAULT_ADDR}/v1/auth/main-kube/config
+  ```
+  For another cluster:
 
-The curl equivalent of the above command:
+  ```bash
+  vault write auth/secondary-kube/config \
+    kubernetes_host="https://10.11.12.10:443"
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request PUT \
-  --data '{"kubernetes_host":"https://10.11.12.10:443"}' \
-  ${VAULT_ADDR}/v1/auth/secondary-kube/config
-```
+  The curl equivalent of the above command:
 
-Create a policy in Vault named `backend` that allows reading secrets:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"kubernetes_host":"https://10.11.12.10:443"}' \
+    ${VAULT_ADDR}/v1/auth/secondary-kube/config
+  ```
 
-```bash
-vault policy write backend - <<EOF
-path "secret/data/database-for-python-app" {
- capabilities = ["read"]
-}
-EOF
-```
+* Create a policy in Vault called "backend" that allows reading of the `database-for-python-app` secret:
 
-The curl equivalent of the above command:
+  ```bash
+  vault policy write backend - <<EOF
+  path "secret/data/database-for-python-app" {
+  capabilities = ["read"]
+  }
+  EOF
+  ```
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request PUT \
-  --data '{"policy":"path \"secret/data/database-for-python-app\" {\n capabilities = [\"read\"]\n}\n"}' \
-  ${VAULT_ADDR}/v1/sys/policies/acl/backend
-```
+  The curl equivalent of the above command:
 
-Create a database role and bind it to the `backend-sa` ServiceAccount in the `my-namespace1` namespace and the `backend` policy:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"policy":"path \"secret/data/database-for-python-app\" {\n capabilities = [\"read\"]\n}\n"}' \
+    ${VAULT_ADDR}/v1/sys/policies/acl/backend
+  ```
 
-```bash
-vault write auth/main-kube/role/my-namespace1_backend \
-   bound_service_account_names=backend-sa \
-   bound_service_account_namespaces=my-namespace1 \
-   policies=backend \
-   ttl=10m
-```
+* Create a database role and bind it to the `backend-sa` ServiceAccount in the `my-namespace1` namespace and the `backend` policy:
 
-The curl equivalent of the above command:
+  {{< alert level="danger">}}
+  **Important!**  
+  In addition to the Vault side settings, you must configure the authorization permissions of the `serviceAccount` used in the kubernetes cluster.
+  See the [FAQ](faq.html#how-to-allow-serviceaccount-to-authorize-in-vault) section for details.
+  {{< /alert >}}
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request PUT \
-  --data '{"bound_service_account_names":"backend-sa","bound_service_account_namespaces":"my-namespace1","policies":"backend","ttl":"10m"}' \
-  ${VAULT_ADDR}/v1/auth/main-kube/role/my-namespace1_backend
-```
+  ```bash
+  vault write auth/main-kube/role/my-namespace1_backend \
+    bound_service_account_names=backend-sa \
+    bound_service_account_namespaces=my-namespace1 \
+    policies=backend \
+    ttl=10m
+  ```
 
-Do the same for the second K8s cluster:
+  The curl equivalent of the above command:
 
-```bash
-vault write auth/secondary-kube/role/my-namespace1_backend \
-   bound_service_account_names=backend-sa \
-   bound_service_account_namespaces=my-namespace1 \
-   policies=backend \
-   ttl=10m
-```
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"bound_service_account_names":"backend-sa","bound_service_account_namespaces":"my-namespace1","policies":"backend","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/main-kube/role/my-namespace1_backend
+  ```
 
-The curl equivalent of the above command:
+  Do the same for the second K8s cluster:
 
-```bash
-curl \
-  --header "X-Vault-Token: ${VAULT_TOKEN}" \
-  --request PUT \
-  --data '{"bound_service_account_names":"backend-sa","bound_service_account_namespaces":"my-namespace1","policies":"backend","ttl":"10m"}' \
-  ${VAULT_ADDR}/v1/auth/secondary-kube/role/my-namespace1_backend
-```
+  ```bash
+  vault write auth/secondary-kube/role/my-namespace1_backend \
+    bound_service_account_names=backend-sa \
+    bound_service_account_namespaces=my-namespace1 \
+    policies=backend \
+    ttl=10m
+    ```
 
-**The recommended TTL value of the Kubernetes token is 10m.**
+  The curl equivalent of the above command:
 
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"bound_service_account_names":"backend-sa","bound_service_account_namespaces":"my-namespace1","policies":"backend","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/secondary-kube/role/my-namespace1_backend
+  ```
+  {{< alert level="info">}}
+  **Important!**  
+  The recommended TTL value of the Kubernetes token is 10m.
+  {{< /alert >}}
+  
 These settings allow any pod within the `my-namespace1` namespace in both K8s clusters that uses the `backend-sa` ServiceAccount to authenticate, authorize, and read secrets in the Vault according to the `backend` policy. 
+
+## How to allow a ServiceAccount to log in to Vault?
+
+To log in to Vault, a k8s pod uses a token generated for its ServiceAccount. In order for Vault to be able to check the validity of the ServiceAccount data provided by the service, Vault must have permission to `get`, `list`, and `watch` for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` clusterRole for this.
+
+Vault can use different credentials to make requests to the Kubernetes API:
+1. Use the token of the application that is trying to log in to Vault. In this case, each service that logs in to Vault must have the `system:auth-delegator` clusterRole (or the API rights listed above) in the ServiceAccount it uses.
+2. Use a static token created specifically for Vault `ServiceAccount` that has the necessary rights. Setting up Vault for this case is described in detail in [Vault documentation](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
 
 ## How to autorotate secrets mounted as files in containers without restarting them?
 
