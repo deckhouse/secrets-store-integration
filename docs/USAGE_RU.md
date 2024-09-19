@@ -248,13 +248,21 @@ export VAULT_ADDR=https://secretstoreexample.com
   Рекомендованное значение TTL для токена Kubernetes составляет 10m.
   {{< /alert >}}
 
-Эти настройки позволяют любому поду из пространства имён `my-namespace1` из обоих K8s-кластеров, который использует ServiceAccount `backend-sa`, аутентифицироваться и авторизоваться в Vault для чтения секретов согласно политике `backend`.
+Эти настройки позволяют любому поду из пространства имён `my-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp`, аутентифицироваться и авторизоваться в Vault для чтения секретов согласно политике `backend`.
 
-```bash
-kubectl create namespace my-namespace
+* Создадим namespace и ServiceAccount в указанном namespace:
+  ```bash
+  kubectl create namespace my-namespace
+  kubectl -n my-namespace create serviceaccount myapp
+  ```
 
-kubectl -n my-namespace create serviceaccount myapp
-```
+## Как разрешить ServiceAccount авторизоваться в Stronghold?
+
+Для авторизации в Stronghold, Pod использует токен, сгенерированный для своего ServiceAccount. Для того чтобы Stronghold мог проверить валидность предоставляемых данных ServiceAccount используемый сервисом, Stronghold должен иметь разрешение на действия `get`, `list` и `watch`  для endpoints `tokenreviews.authentication.k8s.io` и `subjectaccessreviews.authorization.k8s.io`. Для этого также можно использовать clusterRole `system:auth-delegator`. 
+
+Stronghold может использовать различные авторизационные данные для осуществления запросов в API Kubernetes:
+1. Использовать токен приложения, которое пытается авторизоваться в Stronghold. В этом случае для каждого сервиса авторизующейся в Stronghold требуется в используемом ServiceAccount иметь clusterRole `system:auth-delegator` (либо права на API представленные выше). 
+2. Использовать статичный токен отдельно созданного специально для Vault `ServiceAccount` у которого имеются необходимые права. Настройка Vault для такого случая подробно описана в [документации Vault](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
 
 ## Инжектирование переменных окружения
 
@@ -321,7 +329,7 @@ metadata:
   name: myapp1
   namespace: my-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "myapp"
+    secrets-store.deckhouse.io/role: "my-namespace_backend"
     secrets-store.deckhouse.io/env-from-path: secret/data/myapp
 spec:
   serviceAccountName: myapp
@@ -363,7 +371,7 @@ metadata:
   name: myapp2
   namespace: my-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "myapp"
+    secrets-store.deckhouse.io/role: "my-namespace_backend"
 spec:
   serviceAccountName: myapp
   containers:
@@ -402,11 +410,7 @@ kubectl -n my-namespace delete pod myapp2 --force
 
 Для доставки секретов в приложение нужно использовать CustomResource “SecretStoreImport”.
 
-Создайте namespace:
-
-```bash
-kubectl create namespace my-namespace
-```
+В этом примере используем уже созданные ServiceAccount `myapp` и namespace `my-namespace` из шага [Подготовка тестового окружения](#подготовка-тестового-окружения)
 
 Создайте в кластере CustomResource _SecretsStoreImport_ с названием “myapp”:
 
@@ -414,11 +418,11 @@ kubectl create namespace my-namespace
 apiVersion: deckhouse.io/v1alpha1
 kind: SecretsStoreImport
 metadata:
-  name: myapp
+  name: myapp-ssi
   namespace: my-namespace
 spec:
   type: CSI
-  role: myapp
+  role: my-namespace_backend
   files:
     - name: "db-password"
       source:
@@ -452,11 +456,11 @@ spec:
     csi:
       driver: secrets-store.csi.deckhouse.io
       volumeAttributes:
-        secretsStoreImport: "myapp"
+        secretsStoreImport: "myapp-ssi"
 ```
+После применения этих ресурсов будет запущен под с названием `backend`, внутри которого будет каталог `/mnt/secrets` с примонтированным внутрь томом `secrets`. Внутри каталога будет лежать файл `db-password` с паролем от базы данных из Vault.
 
 Проверьте логи пода после его запуска (должно выводиться содержимое файла `/mnt/secrets/db-password`):
-
 ```bash
 kubectl -n my-namespace logs myapp3
 ```
@@ -467,3 +471,69 @@ kubectl -n my-namespace logs myapp3
 kubectl -n my-namespace delete pod myapp3 --force
 ```
 
+### Функция авторотации
+
+Функция авторотации секретов в модуле secret-store-integration включена по умолчанию. Каждые две минуты модуль опрашивает Vault и синхронизирует секреты в примонтированном файле в случае его изменения.
+
+Есть два варианта следить за изменениями файла с секретом в поде. Первый - следить за временем изменения примонтированного файла, реагируя на его изменение. Второй - использовать inotify API, который предоставляет механизм для подписки на события файловой системы. Inotify является частью ядра Linux. После обнаружения изменений есть большое количество вариантов реагирования на событие изменения в зависимости от используемой архитектуры приложения и используемого языка программирования. Самый простой — заставить K8s перезапустить под, перестав отвечать на liveness-пробу.
+
+Пример использования inotify в приложении на Python с использованием пакета inotify:
+
+```python
+#!/usr/bin/python3
+
+import inotify.adapters
+
+def _main():
+    i = inotify.adapters.Inotify()
+    i.add_watch('/mnt/secrets-store/db-password')
+
+    for event in i.event_gen(yield_nones=False):
+        (_, type_names, path, filename) = event
+
+        if 'IN_MODIFY' in type_names:
+            print("file modified")
+
+if __name__ == '__main__':
+    _main()
+```
+
+Пример использования inotify в приложении на Go, используя пакет inotify:
+
+```python
+watcher, err := inotify.NewWatcher()
+if err != nil {
+    log.Fatal(err)
+}
+err = watcher.Watch("/mnt/secrets-store/db-password")
+if err != nil {
+    log.Fatal(err)
+}
+for {
+    select {
+    case ev := <-watcher.Event:
+        if ev == 'InModify' {
+        	log.Println("file modified")}
+    case err := <-watcher.Error:
+        log.Println("error:", err)
+    }
+}
+```
+
+#### Ограничения при обновлении секретов
+
+Файлы с секретами не будут обновляться, если будет использован `subPath`.
+
+```yaml
+   volumeMounts:
+   - mountPath: /app/settings.ini
+     name: app-config
+     subPath: settings.ini
+...
+ volumes:
+ - name: app-config
+   csi:
+     driver: secrets-store.csi.deckhouse.io
+     volumeAttributes:
+       secretsStoreImport: "python-backend"
+```
