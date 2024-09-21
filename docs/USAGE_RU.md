@@ -71,9 +71,10 @@ export VAULT_ADDR=https://secretstoreexample.com
 
 Для использования инструкций по инжектированию секретов из примеров ниже вам понадобится:
 
-1. Создать в Stronhold секрет типа kv2 по пути `secret/myapp` и поместить туда значения `DB_USER` и `DB_PASS`.
-2. Создать в Stronhold политику, разрешающую чтение секретов по пути `secret/myapp`.
-3. Создать в Stronhold роль `myapp` для сервис-аккаунта `myapp` в неймспейсе `my-namespace` и привязать к ней созданную ранее политику.
+1. Создать в Stronghold секрет типа kv2 по пути `secret/myapp` и поместить туда значения `DB_USER` и `DB_PASS`.
+2. При необходимости добавляем путь аутентификации (authPath) для аутентификации и авторизации в Stronghold с помощью Kubernetes API удалённого кластера
+2. Создать в Stronghold политику, разрешающую чтение секретов по пути `secret/myapp`.
+3. Создать в Stronghold роль `my-namespace_backend` для сервис-аккаунта `myapp` в неймспейсе `my-namespace` и привязать к ней созданную ранее политику.
 4. Создать в кластере неймспейс `my-namespace`.
 5. Создать в созданном неймспейсе сервис-аккаунт `myapp`.
 
@@ -122,10 +123,10 @@ export VAULT_ADDR=https://secretstoreexample.com
     ${VAULT_ADDR}/v1/secret/data/myapp
   ```
 
-* Задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Stronghold с помощью Kubernetes API:
+* По умолчанию метод аутентификации в Stronghold через Kubernetes API кластера, на котором запущен сам Stronghold, – включён и настроен под именем `kubernetes_local`. Если требуется настроить доступ через удалённые кластера, задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Stronghold с помощью Kubernetes API для каждого кластера:
 
   ```bash
-  stronghold auth enable -path=main-kube kubernetes
+  stronghold auth enable -path=remote-kube-1 kubernetes
   ```
   Команда с использованием curl:
   ```bash
@@ -133,42 +134,13 @@ export VAULT_ADDR=https://secretstoreexample.com
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request POST \
     --data '{"type":"kubernetes"}' \
-    ${VAULT_ADDR}/v1/sys/auth/main-kube
-  ```
-
-* Если требуется настроить доступ для более чем одного кластера, то задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Stronghold с помощью Kubernetes API для каждого кластера:
-
-  ```bash
-  stronghold auth enable -path=secondary-kube kubernetes
-  ```
-  Команда с использованием curl:
-  ```bash
-  curl \
-    --header "X-Vault-Token: ${VAULT_TOKEN}" \
-    --request POST \
-    --data '{"type":"kubernetes"}' \
-    ${VAULT_ADDR}/v1/sys/auth/secondary-kube
+    ${VAULT_ADDR}/v1/sys/auth/remote-kube-1
   ```
 
 * Задаём адрес Kubernetes API для каждого кластера:
 
   ```bash
-  stronghold write auth/main-kube/config \
-    kubernetes_host="https://kubernetes.default.svc:443"
-  ```
-  Команда с использованием curl:
-  ```bash
-  curl \
-    --header "X-Vault-Token: ${VAULT_TOKEN}" \
-    --request PUT \
-    --data '{"kubernetes_host":"https://kubernetes.default.svc:443"}' \
-    ${VAULT_ADDR}/v1/auth/main-kube/config
-  ```
-
-  Для другого кластера:
-
-  ```bash
-  stronghold write auth/secondary-kube/config \
+  stronghold write auth/remote-kube-1/config \
     kubernetes_host="https://api.kube.my-deckhouse.com"
   ```
   Команда с использованием curl:
@@ -177,7 +149,7 @@ export VAULT_ADDR=https://secretstoreexample.com
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
     --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com"}' \
-    ${VAULT_ADDR}/v1/auth/secondary-kube/config
+    ${VAULT_ADDR}/v1/auth/remote-kube-1/config
   ```
 
 * Создаём в Vault политику с названием `backend`, разрешающую чтение секрета `myapp`:
@@ -203,12 +175,12 @@ export VAULT_ADDR=https://secretstoreexample.com
 
   {{< alert level="danger">}}
   **Важно!**  
-  Помимо настроек со стороны Vault, вы должны настроить разрешения авторизации используемых `serviceAccount` в кластере kubernetes.  
-  Подробности в разделе [FAQ](faq.html#как-разрешить-serviceaccount-авторизоваться-в-vault)
+  Помимо настроек со стороны Stronghold, вы должны настроить разрешения авторизации используемых `serviceAccount` в кластере kubernetes.  
+  Подробности в пункте [ниже](#как-разрешить-serviceaccount-авторизоваться-в-stronghold)
   {{< /alert >}}
 
   ```bash
-  stronghold write auth/main-kube/role/my-namespace_backend \
+  stronghold write auth/kubernetes_local/role/my-namespace_backend \
       bound_service_account_names=myapp \
       bound_service_account_namespaces=my-namespace \
       policies=backend \
@@ -220,14 +192,14 @@ export VAULT_ADDR=https://secretstoreexample.com
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
     --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
-    ${VAULT_ADDR}/v1/auth/main-kube/role/my-namespace_backend
+    ${VAULT_ADDR}/v1/auth/kubernetes_local/role/my-namespace_backend
   ```
 
 
 * Повторяем то же самое для остальных кластеров, указав другой путь аутентификации:
 
   ```bash
-  vault write auth/secondary-kube/role/my-namespace_backend \
+  stronghold write auth/remote-kube-1/role/my-namespace_backend \
       bound_service_account_names=myapp \
       bound_service_account_namespaces=my-namespace \
       policies=backend \
@@ -239,7 +211,7 @@ export VAULT_ADDR=https://secretstoreexample.com
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
     --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
-    ${VAULT_ADDR}/v1/auth/secondary-kube/role/my-namespace_backend
+    ${VAULT_ADDR}/v1/auth/remote-kube-1/role/my-namespace_backend
   ```
 
 
@@ -248,7 +220,7 @@ export VAULT_ADDR=https://secretstoreexample.com
   Рекомендованное значение TTL для токена Kubernetes составляет 10m.
   {{< /alert >}}
 
-Эти настройки позволяют любому поду из пространства имён `my-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp`, аутентифицироваться и авторизоваться в Vault для чтения секретов согласно политике `backend`.
+Эти настройки позволяют любому поду из пространства имён `my-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp`, аутентифицироваться и авторизоваться в Stronghold для чтения секретов согласно политике `backend`.
 
 * Создадим namespace и ServiceAccount в указанном namespace:
   ```bash
