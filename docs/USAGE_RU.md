@@ -54,37 +54,187 @@ spec:
 
 ## Подготовка тестового окружения
 
+{{< alert level="info">}}
+Для выполнения дальнейших команд необходим адрес и токен с правами root от Stronghold.
+Такой токен можно получить во время инициализации нового secrets store.
+
+Далее в командах будет подразумеваться что данные настойки указаны в переменных окружения.
+```bash
+export VAULT_TOKEN=xxxxxxxxxxx
+export VAULT_ADDR=https://secretstoreexample.com
+```
+{{< /alert >}}
+
+> В этом руководстве мы приводим два вида примерных команд: 
+>   * команда с использованием консольной версии HashiCorp Vault ([руководство по установке](https://developer.hashicorp.com/vault/docs/install));
+>   * команда с использованием curl для выполнения прямых запросов в API secrets store.
+
 Для использования инструкций по инжектированию секретов из примеров ниже вам понадобится:
 
-1. Создать в Stronhold секрет типа kv2 по пути `secret/myapp` и поместить туда значения `DB_USER` и `DB_PASS`.
-2. Создать в Stronhold политику, разрешающую чтение секретов по пути `secret/myapp`.
-3. Создать в Stronhold роль `myapp` для сервис-аккаунта `myapp` в неймспейсе `my-namespace` и привязать к ней созданную ранее политику.
+1. Создать в Stronghold секрет типа kv2 по пути `secret/myapp` и поместить туда значения `DB_USER` и `DB_PASS`.
+2. При необходимости добавляем путь аутентификации (authPath) для аутентификации и авторизации в Stronghold с помощью Kubernetes API удалённого кластера
+2. Создать в Stronghold политику, разрешающую чтение секретов по пути `secret/myapp`.
+3. Создать в Stronghold роль `my-namespace_backend` для сервис-аккаунта `myapp` в неймспейсе `my-namespace` и привязать к ней созданную ранее политику.
 4. Создать в кластере неймспейс `my-namespace`.
 5. Создать в созданном неймспейсе сервис-аккаунт `myapp`.
 
 Пример команд, с помощью которых можно подготовить окружение
 
-```bash
-stronghold secrets enable -path=secret -version=2 kv
+* Включим и создадим Key-Value хранилище:
 
-stronghold kv put secret/myapp DB_USER="username" DB_PASS="secret-password"
+  ```bash
+  stronghold secrets enable -path=secret -version=2 kv
+  ```
+  Команда с использованием curl:
 
-stronghold policy write myapp - <<EOF
-path "secret/data/myapp" {
-  capabilities = ["read"]
-}
-EOF
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request POST \
+    --data '{"type":"kv","options":{"version":"2"}}' \
+    ${VAULT_ADDR}/v1/sys/mounts/secret
+  ```
 
-stronghold write auth/kubernetes_local/role/myapp \
-    bound_service_account_names=myapp \
-    bound_service_account_namespaces=my-namespace \
-    policies=myapp \
-    ttl=60s
+* Зададим имя пользователя и пароль базы данных в качестве значения секрета:
 
-kubectl create namespace my-namespace
+  ```bash
+  stronghold kv put secret/myapp DB_USER="username" DB_PASS="secret-password"
+  ```
+  Команда с использованием curl:
 
-kubectl -n my-namespace create serviceaccount myapp
-```
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"data":{"DB_USER":"username","DB_PASS":"secret-password"}}' \
+    ${VAULT_ADDR}/v1/secret/data/myapp
+  ```
+
+* Проверим, правильно ли записались секреты:
+
+  ```bash
+  stronghold kv get secret/myapp
+  ```  
+  
+  Команда с использованием curl:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    ${VAULT_ADDR}/v1/secret/data/myapp
+  ```
+
+* По умолчанию метод аутентификации в Stronghold через Kubernetes API кластера, на котором запущен сам Stronghold, – включён и настроен под именем `kubernetes_local`. Если требуется настроить доступ через удалённые кластера, задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Stronghold с помощью Kubernetes API для каждого кластера:
+
+  ```bash
+  stronghold auth enable -path=remote-kube-1 kubernetes
+  ```
+  Команда с использованием curl:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request POST \
+    --data '{"type":"kubernetes"}' \
+    ${VAULT_ADDR}/v1/sys/auth/remote-kube-1
+  ```
+
+* Задаём адрес Kubernetes API для каждого кластера:
+
+  ```bash
+  stronghold write auth/remote-kube-1/config \
+    kubernetes_host="https://api.kube.my-deckhouse.com"
+  ```
+  Команда с использованием curl:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com"}' \
+    ${VAULT_ADDR}/v1/auth/remote-kube-1/config
+  ```
+
+* Создаём в Stronghold политику с названием `backend`, разрешающую чтение секрета `myapp`:
+
+  ```bash
+  stronghold policy write backend - <<EOF
+  path "secret/data/myapp" {
+    capabilities = ["read"]
+  }
+  EOF
+  ```
+  Команда с использованием curl:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"policy":"path \"secret/data/myapp\" {\n capabilities = [\"read\"]\n}\n"}' \
+    ${VAULT_ADDR}/v1/sys/policies/acl/backend
+  ```
+
+
+* Создаём роль, состоящую из названия пространства имён и политики. Связываем её с ServiceAccount `myapp` из пространства имён `my-namespace` и политикой `backend`:
+
+  {{< alert level="danger">}}
+  **Важно!**  
+  Помимо настроек со стороны Stronghold, вы должны настроить разрешения авторизации используемых `serviceAccount` в кластере kubernetes.  
+  Подробности в пункте [ниже](#как-разрешить-serviceaccount-авторизоваться-в-stronghold)
+  {{< /alert >}}
+
+  ```bash
+  stronghold write auth/kubernetes_local/role/my-namespace_backend \
+      bound_service_account_names=myapp \
+      bound_service_account_namespaces=my-namespace \
+      policies=backend \
+      ttl=10m
+  ```
+  Команда с использованием curl:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/kubernetes_local/role/my-namespace_backend
+  ```
+
+
+* Повторяем то же самое для остальных кластеров, указав другой путь аутентификации:
+
+  ```bash
+  stronghold write auth/remote-kube-1/role/my-namespace_backend \
+      bound_service_account_names=myapp \
+      bound_service_account_namespaces=my-namespace \
+      policies=backend \
+      ttl=10m
+  ```
+  Команда с использованием curl:
+  ```bash
+  curl \
+    --header "X-Vault-Token: ${VAULT_TOKEN}" \
+    --request PUT \
+    --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/remote-kube-1/role/my-namespace_backend
+  ```
+
+
+  {{< alert level="info">}}
+  **Важно!**  
+  Рекомендованное значение TTL для токена Kubernetes составляет 10m.
+  {{< /alert >}}
+
+Эти настройки позволяют любому поду из пространства имён `my-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp`, аутентифицироваться и авторизоваться в Stronghold для чтения секретов согласно политике `backend`.
+
+* Создадим namespace и ServiceAccount в указанном namespace:
+  ```bash
+  kubectl create namespace my-namespace
+  kubectl -n my-namespace create serviceaccount myapp
+  ```
+
+## Как разрешить ServiceAccount авторизоваться в Stronghold?
+
+Для авторизации в Stronghold, Pod использует токен, сгенерированный для своего ServiceAccount. Для того чтобы Stronghold мог проверить валидность предоставляемых данных ServiceAccount используемый сервисом, Stronghold должен иметь разрешение на действия `get`, `list` и `watch`  для endpoints `tokenreviews.authentication.k8s.io` и `subjectaccessreviews.authorization.k8s.io`. Для этого также можно использовать clusterRole `system:auth-delegator`. 
+
+Stronghold может использовать различные авторизационные данные для осуществления запросов в API Kubernetes:
+1. Использовать токен приложения, которое пытается авторизоваться в Stronghold. В этом случае для каждого сервиса авторизующейся в Stronghold требуется в используемом ServiceAccount иметь clusterRole `system:auth-delegator` (либо права на API представленные выше). 
+2. Использовать статичный токен отдельно созданного специально для Stronghold `ServiceAccount` у которого имеются необходимые права. Настройка Stronghold для такого случая подробно описана в [документации Vault](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
 
 ## Инжектирование переменных окружения
 
@@ -151,7 +301,7 @@ metadata:
   name: myapp1
   namespace: my-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "myapp"
+    secrets-store.deckhouse.io/role: "my-namespace_backend"
     secrets-store.deckhouse.io/env-from-path: secret/data/myapp
 spec:
   serviceAccountName: myapp
@@ -193,7 +343,7 @@ metadata:
   name: myapp2
   namespace: my-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "myapp"
+    secrets-store.deckhouse.io/role: "my-namespace_backend"
 spec:
   serviceAccountName: myapp
   containers:
@@ -232,11 +382,7 @@ kubectl -n my-namespace delete pod myapp2 --force
 
 Для доставки секретов в приложение нужно использовать CustomResource “SecretStoreImport”.
 
-Создайте namespace:
-
-```bash
-kubectl create namespace my-namespace
-```
+В этом примере используем уже созданные ServiceAccount `myapp` и namespace `my-namespace` из шага [Подготовка тестового окружения](#подготовка-тестового-окружения)
 
 Создайте в кластере CustomResource _SecretsStoreImport_ с названием “myapp”:
 
@@ -244,11 +390,11 @@ kubectl create namespace my-namespace
 apiVersion: deckhouse.io/v1alpha1
 kind: SecretsStoreImport
 metadata:
-  name: myapp
+  name: myapp-ssi
   namespace: my-namespace
 spec:
   type: CSI
-  role: myapp
+  role: my-namespace_backend
   files:
     - name: "db-password"
       source:
@@ -282,11 +428,11 @@ spec:
     csi:
       driver: secrets-store.csi.deckhouse.io
       volumeAttributes:
-        secretsStoreImport: "myapp"
+        secretsStoreImport: "myapp-ssi"
 ```
+После применения этих ресурсов будет запущен под с названием `backend`, внутри которого будет каталог `/mnt/secrets` с примонтированным внутрь томом `secrets`. Внутри каталога будет лежать файл `db-password` с паролем от базы данных из Stronghold.
 
 Проверьте логи пода после его запуска (должно выводиться содержимое файла `/mnt/secrets/db-password`):
-
 ```bash
 kubectl -n my-namespace logs myapp3
 ```
@@ -297,3 +443,69 @@ kubectl -n my-namespace logs myapp3
 kubectl -n my-namespace delete pod myapp3 --force
 ```
 
+### Функция авторотации
+
+Функция авторотации секретов в модуле secret-store-integration включена по умолчанию. Каждые две минуты модуль опрашивает Stronghold и синхронизирует секреты в примонтированном файле в случае его изменения.
+
+Есть два варианта следить за изменениями файла с секретом в поде. Первый - следить за временем изменения примонтированного файла, реагируя на его изменение. Второй - использовать inotify API, который предоставляет механизм для подписки на события файловой системы. Inotify является частью ядра Linux. После обнаружения изменений есть большое количество вариантов реагирования на событие изменения в зависимости от используемой архитектуры приложения и используемого языка программирования. Самый простой — заставить K8s перезапустить под, перестав отвечать на liveness-пробу.
+
+Пример использования inotify в приложении на Python с использованием пакета inotify:
+
+```python
+#!/usr/bin/python3
+
+import inotify.adapters
+
+def _main():
+    i = inotify.adapters.Inotify()
+    i.add_watch('/mnt/secrets-store/db-password')
+
+    for event in i.event_gen(yield_nones=False):
+        (_, type_names, path, filename) = event
+
+        if 'IN_MODIFY' in type_names:
+            print("file modified")
+
+if __name__ == '__main__':
+    _main()
+```
+
+Пример использования inotify в приложении на Go, используя пакет inotify:
+
+```python
+watcher, err := inotify.NewWatcher()
+if err != nil {
+    log.Fatal(err)
+}
+err = watcher.Watch("/mnt/secrets-store/db-password")
+if err != nil {
+    log.Fatal(err)
+}
+for {
+    select {
+    case ev := <-watcher.Event:
+        if ev == 'InModify' {
+        	log.Println("file modified")}
+    case err := <-watcher.Error:
+        log.Println("error:", err)
+    }
+}
+```
+
+#### Ограничения при обновлении секретов
+
+Файлы с секретами не будут обновляться, если будет использован `subPath`.
+
+```yaml
+   volumeMounts:
+   - mountPath: /app/settings.ini
+     name: app-config
+     subPath: settings.ini
+...
+ volumes:
+ - name: app-config
+   csi:
+     driver: secrets-store.csi.deckhouse.io
+     volumeAttributes:
+       secretsStoreImport: "python-backend"
+```
