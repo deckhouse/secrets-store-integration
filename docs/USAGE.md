@@ -66,24 +66,24 @@ export VAULT_ADDR=https://secretstoreexample.com
 {{< /alert >}}
 
 > This guide will cover two ways to do this:
->   * using the console version of Stronghold (see the [Vault installation guide](https://developer.hashicorp.com/vault/docs/install));
+>   * using the console version of Stronghold ([Get stronghold cli](#get-stronghold-cli));
 >   * using curl to make direct requests to the secrets store API.
 
 Before proceeding with the secret injection instructions in the examples below, do the following:
 
-1. Create a kv2 type secret in Stronghold in `test-kv/myapp` and copy `DB_USER` and `DB_PASS` there.
+1. Create a kv2 type secret in Stronghold in `test-kv/myapp-secret` and copy `DB_USER` and `DB_PASS` there.
 2. If necessary, add an authentication path (authPath) for authentication and authorization to Stronghold using the Kubernetes API of the remote cluster
-3. Create a policy in Stronghold that allows reading secrets from `secret/myapp`.
-4. Create a `myapp` role in Stronghold for the `myapp` service account in the `my-namespace` namespace and bind the policy you created earlier to it.
+3. Create a policy named `myapp-ro-policy` in Stronghold that allows reading secrets from `test-kv/myapp-secret`.
+4. Create a `myapp-role` role in Stronghold for the `myapp-sa` service account in the `my-namespace` namespace and bind the policy you created earlier to it.
 5. Create a `my-namespace` namespace in the cluster.
-6. Create a `myapp` service account in the created namespace.
+6. Create a `myapp-sa` service account in the created namespace.
 
 Example commands to set up the environment:
 
 * Enable and create the Key-Value store:
 
   ```bash
-  stronghold secrets enable -path=secret -version=2 kv
+  stronghold secrets enable -path=test-kv -version=2 kv
   ```
   The same command as a curl HTTP request:
 
@@ -92,13 +92,13 @@ Example commands to set up the environment:
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request POST \
     --data '{"type":"kv","options":{"version":"2"}}' \
-    ${VAULT_ADDR}/v1/sys/mounts/secret
+    ${VAULT_ADDR}/v1/sys/mounts/test-kv
   ```
 
 * Set the database username and password as the value of the secret:
 
   ```bash
-  stronghold kv put secret/myapp DB_USER="username" DB_PASS="secret-password"
+  stronghold kv put test-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
   ```
   The curl equivalent of the above command:
 
@@ -107,20 +107,20 @@ Example commands to set up the environment:
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
     --data '{"data":{"DB_USER":"username","DB_PASS":"secret-password"}}' \
-    ${VAULT_ADDR}/v1/secret/data/myapp
+    ${VAULT_ADDR}/v1/test-kv/data/myapp-secret
   ```
 
 * Double-check that the password has been saved successfully:
 
   ```bash
-  stronghold kv get secret/myapp
+  stronghold kv get test-kv/myapp-secret
   ```  
   
   The curl equivalent of the above command:
   ```bash
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
-    ${VAULT_ADDR}/v1/secret/data/myapp
+    ${VAULT_ADDR}/v1/test-kv/data/myapp-secret
   ```
 
 * By default, the method of authentication in Stronghold via Kubernetes API of the cluster on which Stronghold itself is running is enabled and configured under the name `kubernetes_local`. If you want to configure access via remote clusters, set the authentication path (`authPath`) and enable authentication and authorization in Stronghold via Kubernetes API for each cluster:
@@ -152,11 +152,11 @@ Example commands to set up the environment:
     ${VAULT_ADDR}/v1/auth/remote-kube-1/config
   ```
 
-* Create a policy in Vault called `backend` that allows reading of the `myapp` secret:
+* Create a policy in Stronghold called `myapp-ro-policy` that allows reading of the `myapp-secret` secret:
 
   ```bash
-  stronghold policy write backend - <<EOF
-  path "secret/data/myapp" {
+  stronghold policy write myapp-ro-policy - <<EOF
+  path "test-kv/data/myapp-secret" {
     capabilities = ["read"]
   }
   EOF
@@ -166,24 +166,24 @@ Example commands to set up the environment:
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"policy":"path \"secret/data/myapp\" {\n capabilities = [\"read\"]\n}\n"}' \
-    ${VAULT_ADDR}/v1/sys/policies/acl/backend
+    --data '{"policy":"path \"test-kv/data/myapp-secret\" {\n capabilities = [\"read\"]\n}\n"}' \
+    ${VAULT_ADDR}/v1/sys/policies/acl/myapp-ro-policy
   ```
 
 
-* Create a database role and bind it to the `myapp` ServiceAccount in the `my-namespace` namespace and the `backend` policy:
+* Create a database role and bind it to the `myapp-sa` ServiceAccount in the `my-namespace` namespace and the `myapp-ro-policy` policy:
 
   {{< alert level="danger">}}
   **Important!**  
-  In addition to the Vault side settings, you must configure the authorization permissions of the `serviceAccount` used in the kubernetes cluster.
-  See the [paragraph below](#how-to-allow-a-serviceaccount-to-log-in-to-vault) section for details.
+  In addition to the Stronghold side settings, you must configure the authorization permissions of the `serviceAccount` used in the kubernetes cluster.
+  See the [paragraph below](#how-to-allow-a-serviceaccount-to-log-in-to-stronghold) section for details.
   {{< /alert >}}
 
   ```bash
-  stronghold write auth/kubernetes_local/role/my-namespace_backend \
-      bound_service_account_names=myapp \
+  stronghold write auth/kubernetes_local/role/myapp-role \
+      bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=my-namespace \
-      policies=backend \
+      policies=myapp-ro-policy \
       ttl=10m
   ```
   The curl equivalent of the above command:
@@ -191,18 +191,18 @@ Example commands to set up the environment:
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
-    ${VAULT_ADDR}/v1/auth/kubernetes_local/role/my-namespace_backend
+    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"my-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/kubernetes_local/role/myapp-role
   ```
 
 
 * Repeat the same for the rest of the clusters, specifying a different authentication path:
 
   ```bash
-  stronghold write auth/remote-kube-1/role/my-namespace_backend \
-      bound_service_account_names=myapp \
+  stronghold write auth/remote-kube-1/role/myapp-role \
+      bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=my-namespace \
-      policies=backend \
+      policies=myapp-ro-policy \
       ttl=10m
   ```
   The curl equivalent of the above command:
@@ -210,8 +210,8 @@ Example commands to set up the environment:
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
-    ${VAULT_ADDR}/v1/auth/remote-kube-1/role/my-namespace_backend
+    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"my-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/remote-kube-1/role/myapp-role
   ```
 
 
@@ -220,27 +220,27 @@ Example commands to set up the environment:
   The recommended TTL value of the Kubernetes token is 10m.
   {{< /alert >}}
 
-These settings allow any pod within the `my-namespace` namespace in both K8s clusters that uses the `myapp` ServiceAccount to authenticate, authorize, and read secrets in the Vault according to the `backend` policy.
+These settings allow any pod within the `my-namespace` namespace in both K8s clusters that uses the `myapp-sa` ServiceAccount to authenticate, authorize, and read secrets in the Stronghold according to the `myapp-ro-policy` policy.
 
 * Create namespace and then ServiceAccount in the specified namespace:
   ```bash
   kubectl create namespace my-namespace
-  kubectl -n my-namespace create serviceaccount myapp
+  kubectl -n my-namespace create serviceaccount myapp-sa
   ```
 
-## How to allow a ServiceAccount to log in to Vault?
+## How to allow a ServiceAccount to log in to Stronghold?
 
-To log in to Vault, a k8s pod uses a token generated for its ServiceAccount. In order for Vault to be able to check the validity of the ServiceAccount data provided by the service, Vault must have permission to `get`, `list`, and `watch` for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` clusterRole for this.
+To log in to Stronghold, a k8s pod uses a token generated for its ServiceAccount. In order for Stronghold to be able to check the validity of the ServiceAccount data provided by the service, Stronghold must have permission to `get`, `list`, and `watch` for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` clusterRole for this.
 
-Vault can use different credentials to make requests to the Kubernetes API:
-1. Use the token of the application that is trying to log in to Vault. In this case, each service that logs in to Vault must have the `system:auth-delegator` clusterRole (or the API rights listed above) in the ServiceAccount it uses.
-2. Use a static token created specifically for Vault `ServiceAccount` that has the necessary rights. Setting up Vault for this case is described in detail in [Vault documentation](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
+Stronghold can use different credentials to make requests to the Kubernetes API:
+1. Use the token of the application that is trying to log in to Stronghold. In this case, each service that logs in to Stronghold must have the `system:auth-delegator` clusterRole (or the API rights listed above) in the ServiceAccount it uses.
+2. Use a static token created specifically for Stronghold `ServiceAccount` that has the necessary rights. Setting up Stronghold for this case is described in detail in [Vault documentation](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
 
 ## Injecting environment variables
 
 ### How it works
 
-When the module is enabled, a mutating-webhook becomes available in the cluster. It modifies the pod manifest, adding an injector, if the pod has the `secrets-store.deckhouse.io/role` annotation An init container is added to the modified pod. Its mission is to copy a statically compiled binary injector file from a service image into a temporary directory shared by all containers in the pod. In the other containers, the original startup commands are replaced with a command that starts the injector. It then fetches the required data from a Vault-compatible storage using the application's service account, sets these variables in the process ENV, and then issues an execve system call, invoking the original command.
+When the module is enabled, a mutating-webhook becomes available in the cluster. It modifies the pod manifest, adding an injector, if the pod has the `secrets-store.deckhouse.io/role` annotation an init container is added to the modified pod. Its mission is to copy a statically compiled binary injector file from a service image into a temporary directory shared by all containers in the pod. In the other containers, the original startup commands are replaced with a command that starts the injector. It then fetches the required data from a Vault-compatible storage using the application's service account, sets these variables in the process ENV, and then issues an execve system call, invoking the original command.
 
 If the container does not have a startup command in the pod manifest, the image manifest is retrieved from the image registry,
 and the command is retrieved from it.
@@ -260,20 +260,20 @@ The following are the available annotations to modify the injector behavior:
 
 The injector allows you to specify env templates instead of values in the pod manifests. They will be replaced at the container startup stage with the values from the store.
 
-For example, here's how you can retrieve the `mypassword` key from the kv2-secret at `secret/myapp` from the Vault-compatible store:
+For example, here's how you can retrieve the `DB_PASS` key from the kv2-secret at `test-kv/myapp-secret` from the Vault-compatible store:
 
 ```yaml
 env:
   - name: PASSWORD
-    value: secrets-store:secret/data/myapp#mypassword
+    value: secrets-store:test-kv/data/myapp-secret#DB_PASS
 ```
 
-The example below retrieves the `mypassword` key version `4` from the kv2 secret at `secret/myapp` from the Vault-compatible store:
+The example below retrieves the `DB_PASS` key version `4` from the kv2 secret at `test-kv/myapp-secret` from the Vault-compatible store:
 
 ```yaml
 env:
   - name: PASSWORD
-    value: secrets-store:secret/data/myapp#mypassword#4
+    value: secrets-store:test-kv/data/myapp-secret#DB_PASS#4
 ```
 
 The template can also be stored in the ConfigMap or in the Secret and can be hooked up using `envFrom`:
@@ -290,7 +290,7 @@ The actual secrets from the Vault-compatible store will be injected at the appli
 
 ### Setting environment variables by specifying the path to the secret in the vault to retrieve all keys from
 
-The following is the specification of a pod named `myapp1`. In it, all the values are retrieved from the store at the `secret/data/myapp` path and stored as environment variables:
+The following is the specification of a pod named `myapp1`. In it, all the values are retrieved from the store at the `test-kv/data/myapp-secret` path and stored as environment variables:
 
 ```yaml
 kind: Pod
@@ -299,10 +299,10 @@ metadata:
   name: myapp1
   namespace: my-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "myapp"
-    secrets-store.deckhouse.io/env-from-path: secret/data/myapp
+    secrets-store.deckhouse.io/role: "myapp-role"
+    secrets-store.deckhouse.io/env-from-path: test-kv/data/myapp-secret
 spec:
-  serviceAccountName: myapp
+  serviceAccountName: myapp-sa
   containers:
   - image: alpine:3.20
     name: myapp
@@ -318,7 +318,7 @@ Let's apply it:
 kubectl create --filename myapp1.yaml
 ```
 
-Check the pod logs after it has been successfully started. You should see all the values from `secret/data/myapp`:
+Check the pod logs after it has been successfully started. You should see all the values from `test-kv/data/myapp-secret`:
 
 ```bash
 kubectl -n my-namespace logs myapp1
@@ -341,16 +341,16 @@ metadata:
   name: myapp2
   namespace: my-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "myapp"
+    secrets-store.deckhouse.io/role: "myapp-role"
 spec:
-  serviceAccountName: myapp
+  serviceAccountName: myapp-sa
   containers:
   - image: alpine:3.20
     env:
     - name: DB_USER
-      value: secrets-store:secret/data/myapp#DB_USER
+      value: secrets-store:test-kv/data/myapp-secret#DB_USER
     - name: DB_PASS
-      value: secrets-store:secret/data/myapp#DB_PASS
+      value: secrets-store:test-kv/data/myapp-secret#DB_PASS
     name: myapp
     command:
     - sh
@@ -364,7 +364,7 @@ Apply it:
 kubectl create --filename myapp2.yaml
 ```
 
-Check the pod logs after it has been successfully started. You should see the values from `secret/data/myapp` matching those in the pod specification:
+Check the pod logs after it has been successfully started. You should see the values from `test-kv/data/myapp-secret` matching those in the pod specification:
 
 ```bash
 kubectl -n my-namespace logs myapp2
@@ -380,7 +380,7 @@ kubectl -n my-namespace delete pod myapp2 --force
 
 Use the `SecretStoreImport` CustomResource to deliver secrets to the application.
 
-In this example, we use the already created ServiceAccount `myapp` and namespace `my-namespace` from step [Setting up the test environment](#setting-up-the-test-environment)
+In this example, we use the already created ServiceAccount `myapp-sa` and namespace `my-namespace` from step [Setting up the test environment](#setting-up-the-test-environment)
 
 Create a _SecretsStoreImport_ CustomResource named `myapp-ssi` in the cluster:
 
@@ -392,11 +392,11 @@ metadata:
   namespace: my-namespace
 spec:
   type: CSI
-  role: myapp
+  role: myapp-role
   files:
     - name: "db-password"
       source:
-        path: "secret/data/myapp"
+        path: "test-kv/data/myapp-secret"
         key: "DB_PASS"
 ```
 
@@ -409,7 +409,7 @@ metadata:
   name: myapp3
   namespace: my-namespace
 spec:
-  serviceAccountName: myapp
+  serviceAccountName: myapp-sa
   containers:
   - image: alpine:3.20
     name: myapp
@@ -426,10 +426,10 @@ spec:
     csi:
       driver: secrets-store.csi.deckhouse.io
       volumeAttributes:
-        secretsStoreImport: "myapp"
+        secretsStoreImport: "myapp-ssi"
 ```
 
-Once these resources have been applied, a `backend` pod will be started. In it, there will be a `/mnt/secrets` directory with the `secrets` volume mounted. The directory will contain a `db-password` file with the password for the Vault database.
+Once these resources have been applied, a pod will be created, inside which a container named `backend` will then be started. This container's filesystem will have a directory `/mnt/secrets`, with the `secrets` volume mounted to it. The directory will contain a `db-password` file with the password for database (`DB_PASS`) from the Stronghold key-value store.
 
 Check the pod logs after it has been successfully started (you should see the contents of the `/mnt/secrets/db-password` file):
 
@@ -445,7 +445,7 @@ kubectl -n my-namespace delete pod myapp3 --force
 
 ### The autorotation feature
 
-The autorotation feature of the secret-store-integration module is enabled by default. Every two minutes, the module polls Vault and synchronizes the secrets in the mounted file if it has been changed.
+The autorotation feature of the secret-store-integration module is enabled by default. Every two minutes, the module polls Stronghold and synchronizes the secrets in the mounted file if it has been changed.
 
 There are two ways to keep track of changes to the secret file in the pod. The first is to keep track of when the mounted file changes (mtime), reacting to changes in the file. The second is to use the inotify API, which provides a mechanism for subscribing to file system events. Inotify is part of the Linux kernel. Once a change is detected, there are a large number of options for responding to the change event, depending on the application architecture and programming language used. The most simple one is to force K8s to restart the pod by failing the liveness probe.
 
@@ -509,3 +509,13 @@ A container that uses the `subPath` volume mount will not get secret updates whe
      volumeAttributes:
        secretsStoreImport: "python-backend"
 ```
+
+## Get stronghold cli
+
+On the cluster's master node, run the following commands as `root`:
+```bash
+mkdir $HOME/bin
+sudo cp /proc/$(pidof stronghold)/root/usr/bin/stronghold bin && sudo chmod a+x bin/stronghold
+export PATH=$PATH:$HOME/bin
+```
+As a result, the command `stronhold` is ready to be used.
