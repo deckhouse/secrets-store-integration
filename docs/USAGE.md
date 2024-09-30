@@ -71,11 +71,11 @@ export VAULT_ADDR=https://secretstoreexample.com
 
 Before proceeding with the secret injection instructions in the examples below, do the following:
 
-1. Create a kv2 type secret in Stronghold in `test-kv/myapp-secret` and copy `DB_USER` and `DB_PASS` there.
+1. Create a kv2 type secret in Stronghold in `demo-kv/myapp-secret` and copy `DB_USER` and `DB_PASS` there.
 2. If necessary, add an authentication path (authPath) for authentication and authorization to Stronghold using the Kubernetes API of the remote cluster
-3. Create a policy named `myapp-ro-policy` in Stronghold that allows reading secrets from `test-kv/myapp-secret`.
-4. Create a `myapp-role` role in Stronghold for the `myapp-sa` service account in the `my-namespace` namespace and bind the policy you created earlier to it.
-5. Create a `my-namespace` namespace in the cluster.
+3. Create a policy named `myapp-ro-policy` in Stronghold that allows reading secrets from `demo-kv/myapp-secret`.
+4. Create a `myapp-role` role in Stronghold for the `myapp-sa` service account in the `myapp-namespace` namespace and bind the policy you created earlier to it.
+5. Create a `myapp-namespace` namespace in the cluster.
 6. Create a `myapp-sa` service account in the created namespace.
 
 Example commands to set up the environment:
@@ -83,7 +83,7 @@ Example commands to set up the environment:
 * Enable and create the Key-Value store:
 
   ```bash
-  stronghold secrets enable -path=test-kv -version=2 kv
+  stronghold secrets enable -path=demo-kv -version=2 kv
   ```
   The same command as a curl HTTP request:
 
@@ -92,13 +92,13 @@ Example commands to set up the environment:
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request POST \
     --data '{"type":"kv","options":{"version":"2"}}' \
-    ${VAULT_ADDR}/v1/sys/mounts/test-kv
+    ${VAULT_ADDR}/v1/sys/mounts/demo-kv
   ```
 
 * Set the database username and password as the value of the secret:
 
   ```bash
-  stronghold kv put test-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
+  stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
   ```
   The curl equivalent of the above command:
 
@@ -107,20 +107,20 @@ Example commands to set up the environment:
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
     --data '{"data":{"DB_USER":"username","DB_PASS":"secret-password"}}' \
-    ${VAULT_ADDR}/v1/test-kv/data/myapp-secret
+    ${VAULT_ADDR}/v1/demo-kv/data/myapp-secret
   ```
 
 * Double-check that the password has been saved successfully:
 
   ```bash
-  stronghold kv get test-kv/myapp-secret
+  stronghold kv get demo-kv/myapp-secret
   ```  
   
   The curl equivalent of the above command:
   ```bash
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
-    ${VAULT_ADDR}/v1/test-kv/data/myapp-secret
+    ${VAULT_ADDR}/v1/demo-kv/data/myapp-secret
   ```
 
 * By default, the method of authentication in Stronghold via Kubernetes API of the cluster on which Stronghold itself is running is enabled and configured under the name `kubernetes_local`. If you want to configure access via remote clusters, set the authentication path (`authPath`) and enable authentication and authorization in Stronghold via Kubernetes API for each cluster:
@@ -156,7 +156,7 @@ Example commands to set up the environment:
 
   ```bash
   stronghold policy write myapp-ro-policy - <<EOF
-  path "test-kv/data/myapp-secret" {
+  path "demo-kv/data/myapp-secret" {
     capabilities = ["read"]
   }
   EOF
@@ -166,12 +166,12 @@ Example commands to set up the environment:
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"policy":"path \"test-kv/data/myapp-secret\" {\n capabilities = [\"read\"]\n}\n"}' \
+    --data '{"policy":"path \"demo-kv/data/myapp-secret\" {\n capabilities = [\"read\"]\n}\n"}' \
     ${VAULT_ADDR}/v1/sys/policies/acl/myapp-ro-policy
   ```
 
 
-* Create a database role and bind it to the `myapp-sa` ServiceAccount in the `my-namespace` namespace and the `myapp-ro-policy` policy:
+* Create a database role and bind it to the `myapp-sa` ServiceAccount in the `myapp-namespace` namespace and the `myapp-ro-policy` policy:
 
   {{< alert level="danger">}}
   **Important!**  
@@ -182,7 +182,7 @@ Example commands to set up the environment:
   ```bash
   stronghold write auth/kubernetes_local/role/myapp-role \
       bound_service_account_names=myapp-sa \
-      bound_service_account_namespaces=my-namespace \
+      bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
       ttl=10m
   ```
@@ -191,7 +191,7 @@ Example commands to set up the environment:
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"my-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
+    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"myapp-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
     ${VAULT_ADDR}/v1/auth/kubernetes_local/role/myapp-role
   ```
 
@@ -201,7 +201,7 @@ Example commands to set up the environment:
   ```bash
   stronghold write auth/remote-kube-1/role/myapp-role \
       bound_service_account_names=myapp-sa \
-      bound_service_account_namespaces=my-namespace \
+      bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
       ttl=10m
   ```
@@ -210,7 +210,7 @@ Example commands to set up the environment:
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"my-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
+    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"myapp-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
     ${VAULT_ADDR}/v1/auth/remote-kube-1/role/myapp-role
   ```
 
@@ -220,12 +220,12 @@ Example commands to set up the environment:
   The recommended TTL value of the Kubernetes token is 10m.
   {{< /alert >}}
 
-These settings allow any pod within the `my-namespace` namespace in both K8s clusters that uses the `myapp-sa` ServiceAccount to authenticate, authorize, and read secrets in the Stronghold according to the `myapp-ro-policy` policy.
+These settings allow any pod within the `myapp-namespace` namespace in both K8s clusters that uses the `myapp-sa` ServiceAccount to authenticate, authorize, and read secrets in the Stronghold according to the `myapp-ro-policy` policy.
 
 * Create namespace and then ServiceAccount in the specified namespace:
   ```bash
-  kubectl create namespace my-namespace
-  kubectl -n my-namespace create serviceaccount myapp-sa
+  kubectl create namespace myapp-namespace
+  kubectl -n myapp-namespace create serviceaccount myapp-sa
   ```
 
 ## How to allow a ServiceAccount to log in to Stronghold?
@@ -260,20 +260,20 @@ The following are the available annotations to modify the injector behavior:
 
 The injector allows you to specify env templates instead of values in the pod manifests. They will be replaced at the container startup stage with the values from the store.
 
-For example, here's how you can retrieve the `DB_PASS` key from the kv2-secret at `test-kv/myapp-secret` from the Vault-compatible store:
+For example, here's how you can retrieve the `DB_PASS` key from the kv2-secret at `demo-kv/myapp-secret` from the Vault-compatible store:
 
 ```yaml
 env:
   - name: PASSWORD
-    value: secrets-store:test-kv/data/myapp-secret#DB_PASS
+    value: secrets-store:demo-kv/data/myapp-secret#DB_PASS
 ```
 
-The example below retrieves the `DB_PASS` key version `4` from the kv2 secret at `test-kv/myapp-secret` from the Vault-compatible store:
+The example below retrieves the `DB_PASS` key version `4` from the kv2 secret at `demo-kv/myapp-secret` from the Vault-compatible store:
 
 ```yaml
 env:
   - name: PASSWORD
-    value: secrets-store:test-kv/data/myapp-secret#DB_PASS#4
+    value: secrets-store:demo-kv/data/myapp-secret#DB_PASS#4
 ```
 
 The template can also be stored in the ConfigMap or in the Secret and can be hooked up using `envFrom`:
@@ -290,17 +290,17 @@ The actual secrets from the Vault-compatible store will be injected at the appli
 
 ### Setting environment variables by specifying the path to the secret in the vault to retrieve all keys from
 
-The following is the specification of a pod named `myapp1`. In it, all the values are retrieved from the store at the `test-kv/data/myapp-secret` path and stored as environment variables:
+The following is the specification of a pod named `myapp1`. In it, all the values are retrieved from the store at the `demo-kv/data/myapp-secret` path and stored as environment variables:
 
 ```yaml
 kind: Pod
 apiVersion: v1
 metadata:
   name: myapp1
-  namespace: my-namespace
+  namespace: myapp-namespace
   annotations:
     secrets-store.deckhouse.io/role: "myapp-role"
-    secrets-store.deckhouse.io/env-from-path: test-kv/data/myapp-secret
+    secrets-store.deckhouse.io/env-from-path: demo-kv/data/myapp-secret
 spec:
   serviceAccountName: myapp-sa
   containers:
@@ -318,16 +318,16 @@ Let's apply it:
 kubectl create --filename myapp1.yaml
 ```
 
-Check the pod logs after it has been successfully started. You should see all the values from `test-kv/data/myapp-secret`:
+Check the pod logs after it has been successfully started. You should see all the values from `demo-kv/data/myapp-secret`:
 
 ```bash
-kubectl -n my-namespace logs myapp1
+kubectl -n myapp-namespace logs myapp1
 ```
 
 Delete the pod:
 
 ```bash
-kubectl -n my-namespace delete pod myapp1 --force
+kubectl -n myapp-namespace delete pod myapp1 --force
 ```
 
 ### Explicitly specifying the values to be retrieved from the vault and used as environment variables
@@ -339,7 +339,7 @@ kind: Pod
 apiVersion: v1
 metadata:
   name: myapp2
-  namespace: my-namespace
+  namespace: myapp-namespace
   annotations:
     secrets-store.deckhouse.io/role: "myapp-role"
 spec:
@@ -348,9 +348,9 @@ spec:
   - image: alpine:3.20
     env:
     - name: DB_USER
-      value: secrets-store:test-kv/data/myapp-secret#DB_USER
+      value: secrets-store:demo-kv/data/myapp-secret#DB_USER
     - name: DB_PASS
-      value: secrets-store:test-kv/data/myapp-secret#DB_PASS
+      value: secrets-store:demo-kv/data/myapp-secret#DB_PASS
     name: myapp
     command:
     - sh
@@ -364,23 +364,23 @@ Apply it:
 kubectl create --filename myapp2.yaml
 ```
 
-Check the pod logs after it has been successfully started. You should see the values from `test-kv/data/myapp-secret` matching those in the pod specification:
+Check the pod logs after it has been successfully started. You should see the values from `demo-kv/data/myapp-secret` matching those in the pod specification:
 
 ```bash
-kubectl -n my-namespace logs myapp2
+kubectl -n myapp-namespace logs myapp2
 ```
 
 Delete the pod:
 
 ```bash
-kubectl -n my-namespace delete pod myapp2 --force
+kubectl -n myapp-namespace delete pod myapp2 --force
 ```
 
 ## Retrieving a secret from the vault and mounting it as a file in a container
 
 Use the `SecretStoreImport` CustomResource to deliver secrets to the application.
 
-In this example, we use the already created ServiceAccount `myapp-sa` and namespace `my-namespace` from step [Setting up the test environment](#setting-up-the-test-environment)
+In this example, we use the already created ServiceAccount `myapp-sa` and namespace `myapp-namespace` from step [Setting up the test environment](#setting-up-the-test-environment)
 
 Create a _SecretsStoreImport_ CustomResource named `myapp-ssi` in the cluster:
 
@@ -389,14 +389,14 @@ apiVersion: deckhouse.io/v1alpha1
 kind: SecretsStoreImport
 metadata:
   name: myapp-ssi
-  namespace: my-namespace
+  namespace: myapp-namespace
 spec:
   type: CSI
   role: myapp-role
   files:
     - name: "db-password"
       source:
-        path: "test-kv/data/myapp-secret"
+        path: "demo-kv/data/myapp-secret"
         key: "DB_PASS"
 ```
 
@@ -407,7 +407,7 @@ kind: Pod
 apiVersion: v1
 metadata:
   name: myapp3
-  namespace: my-namespace
+  namespace: myapp-namespace
 spec:
   serviceAccountName: myapp-sa
   containers:
@@ -434,13 +434,13 @@ Once these resources have been applied, a pod will be created, inside which a co
 Check the pod logs after it has been successfully started (you should see the contents of the `/mnt/secrets/db-password` file):
 
 ```bash
-kubectl -n my-namespace logs myapp3
+kubectl -n myapp-namespace logs myapp3
 ```
 
 Delete the pod:
 
 ```bash
-kubectl -n my-namespace delete pod myapp3 --force
+kubectl -n myapp-namespace delete pod myapp3 --force
 ```
 
 ### The autorotation feature
