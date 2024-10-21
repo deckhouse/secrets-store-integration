@@ -1,10 +1,10 @@
-ARG BASE_GOLANG_20_ALPINE=registry.deckhouse.io/base_images/golang:1.20.5-alpine3.18
+ARG BASE_GOLANG_23_ALPINE=registry.deckhouse.io/base_images/golang:1.23.1-alpine3.20
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
-FROM $BASE_GOLANG_20_ALPINE as artifact
+FROM $BASE_GOLANG_23_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/kubernetes-csi/node-driver-registrar.git
 ENV SOURCE_REPO=${SOURCE_REPO}
-ARG SOURCE_SHA1=deed783528cd828baedc5493a866a0217f7b08fe
+ARG SOURCE_SHA1=3bff1dbf16e154e8fe6783242af1ad8d0c507fa4
 ENV SOURCE_SHA1=${SOURCE_SHA1}
 
 RUN apk add --no-cache make git bash

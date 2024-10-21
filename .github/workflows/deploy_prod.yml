@@ -55,20 +55,24 @@ jobs:
         shell: bash
 
   job-CE:
-     name: Edition CE
-     runs-on: ubuntu-latest
-     if: github.event.inputs.ce == 'true'
-     steps:
-       - run: echo "CE"
-       - name: SET VAR
-         run: |
-           echo "MODULES_MODULE_SOURCE=$MODULES_REGISTRY/$MODULE_SOURCE_NAME/ce/modules" >> "$GITHUB_ENV"
-       - name: ECHO VAR
-         run: |
-           echo $MODULES_MODULE_SOURCE
-       - uses: actions/checkout@v4
-       - uses: deckhouse/modules-actions/setup@v1
-       - uses: deckhouse/modules-actions/deploy@v1
+    name: Edition CE
+    runs-on: ubuntu-latest
+    if: github.event.inputs.ce == 'true'
+    steps:
+      - run: echo "CE"
+      - name: Validation for tag
+        run: |
+          echo ${{ github.event.inputs.tag }} | grep -P '^v\d+\.\d+\.\d+$'
+        shell: bash
+      - name: SET VAR
+        run: |
+          echo "MODULES_MODULE_SOURCE=$MODULES_REGISTRY/$MODULE_SOURCE_NAME/ce/modules" >> "$GITHUB_ENV"
+      - name: ECHO VAR
+        run: |
+          echo $MODULES_MODULE_SOURCE
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/setup@v1
+      - uses: deckhouse/modules-actions/deploy@v1
 
   job-EE:
     name: Edition EE
@@ -76,6 +80,10 @@ jobs:
     if: github.event.inputs.ee == 'true'
     steps:
       - run: echo "EE"
+      - name: Validation for tag
+        run: |
+          echo ${{ github.event.inputs.tag }} | grep -P '^v\d+\.\d+\.\d+$'
+        shell: bash
       - name: SET VAR
         run: |
            echo "MODULES_MODULE_SOURCE=$MODULES_REGISTRY/$MODULE_SOURCE_NAME/ee/modules" >> "$GITHUB_ENV"
@@ -92,6 +100,10 @@ jobs:
     if: github.event.inputs.fe == 'true'
     steps:
       - run: echo "FE"
+      - name: Validation for tag
+        run: |
+          echo ${{ github.event.inputs.tag }} | grep -P '^v\d+\.\d+\.\d+$'
+        shell: bash
       - name: SET VAR
         run: |
            echo "MODULES_MODULE_SOURCE=$MODULES_REGISTRY/$MODULE_SOURCE_NAME/fe/modules" >> "$GITHUB_ENV"

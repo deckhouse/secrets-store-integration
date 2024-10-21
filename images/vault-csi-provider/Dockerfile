@@ -1,10 +1,10 @@
-ARG BASE_GOLANG_19_ALPINE=golang:1.20.5-alpine3.18
+ARG BASE_GOLANG_23_ALPINE=registry.deckhouse.io/base_images/golang:1.23.1-alpine3.20
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
-FROM $BASE_GOLANG_19_ALPINE as artifact
+FROM $BASE_GOLANG_23_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/hashicorp/vault-csi-provider.git
 ENV SOURCE_REPO=${SOURCE_REPO}
-ARG SOURCE_SHA1=77cca3cb7b6937c06e29f5caf679221fa6af1cf0
+ARG SOURCE_SHA1=8cd071125cb6dcf11a96d23787e34338f42bc056
 ENV SOURCE_SHA1=${SOURCE_SHA1}
 
 RUN apk add --no-cache make git
