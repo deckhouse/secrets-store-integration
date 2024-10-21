@@ -23,7 +23,7 @@ spec:
 
 ## Настройка модуля для работы с внешним хранилищем
 
-Для работы модуля требуется предварительно настроенное хранилище секретов, совместимое с HashiCorp Vault. В хранилище предварительно должен быть настроен путь аутентификации. Пример настройки хранилища секретом в FAQ.
+Для работы модуля требуется предварительно настроенное хранилище секретов, совместимое с HashiCorp Vault. В хранилище предварительно должен быть настроен путь аутентификации. Пример настройки хранилища секретов [ниже](#подготовка-тестового-окружения).
 
 Чтобы убедиться, что каждый API запрос зашифрован, послан и отвечен правильным адресатом, потребуется валидный публичный сертификат Certificate Authority, который используется хранилищем секретов. Такой публичный сертификат CA в PEM-формате необходимо использовать в качестве переменной `caCert` в конфигурации модуля.
 
@@ -66,24 +66,24 @@ export VAULT_ADDR=https://secretstoreexample.com
 {{< /alert >}}
 
 > В этом руководстве мы приводим два вида примерных команд: 
->   * команда с использованием консольной версии HashiCorp Vault ([руководство по установке](https://developer.hashicorp.com/vault/docs/install));
+>   * команда с использованием консольной версии Stronghold ([Как получить бинарный файл stronghold](#как-получить-бинарный-файл-stronghold));
 >   * команда с использованием curl для выполнения прямых запросов в API secrets store.
 
 Для использования инструкций по инжектированию секретов из примеров ниже вам понадобится:
 
-1. Создать в Stronghold секрет типа kv2 по пути `secret/myapp` и поместить туда значения `DB_USER` и `DB_PASS`.
+1. Создать в Stronghold секрет типа kv2 по пути `demo-kv/myapp-secret` и поместить туда значения `DB_USER` и `DB_PASS`.
 2. При необходимости добавляем путь аутентификации (authPath) для аутентификации и авторизации в Stronghold с помощью Kubernetes API удалённого кластера
-2. Создать в Stronghold политику, разрешающую чтение секретов по пути `secret/myapp`.
-3. Создать в Stronghold роль `my-namespace_backend` для сервис-аккаунта `myapp` в неймспейсе `my-namespace` и привязать к ней созданную ранее политику.
-4. Создать в кластере неймспейс `my-namespace`.
-5. Создать в созданном неймспейсе сервис-аккаунт `myapp`.
+3. Создать в Stronghold политику `myapp-ro-policy`, разрешающую чтение секретов по пути `demo-kv/myapp-secret`.
+4. Создать в Stronghold роль `myapp-role` для сервис-аккаунта `myapp-sa` в неймспейсе `myapp-namespace` и привязать к ней созданную ранее политику.
+5. Создать в кластере неймспейс `myapp-namespace`.
+6. Создать в созданном неймспейсе сервис-аккаунт `myapp-sa`.
 
 Пример команд, с помощью которых можно подготовить окружение
 
 * Включим и создадим Key-Value хранилище:
 
   ```bash
-  stronghold secrets enable -path=secret -version=2 kv
+  stronghold secrets enable -path=demo-kv -version=2 kv
   ```
   Команда с использованием curl:
 
@@ -92,13 +92,13 @@ export VAULT_ADDR=https://secretstoreexample.com
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request POST \
     --data '{"type":"kv","options":{"version":"2"}}' \
-    ${VAULT_ADDR}/v1/sys/mounts/secret
+    ${VAULT_ADDR}/v1/sys/mounts/demo-kv
   ```
 
 * Зададим имя пользователя и пароль базы данных в качестве значения секрета:
 
   ```bash
-  stronghold kv put secret/myapp DB_USER="username" DB_PASS="secret-password"
+  stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
   ```
   Команда с использованием curl:
 
@@ -107,20 +107,20 @@ export VAULT_ADDR=https://secretstoreexample.com
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
     --data '{"data":{"DB_USER":"username","DB_PASS":"secret-password"}}' \
-    ${VAULT_ADDR}/v1/secret/data/myapp
+    ${VAULT_ADDR}/v1/demo-kv/data/myapp-secret
   ```
 
 * Проверим, правильно ли записались секреты:
 
   ```bash
-  stronghold kv get secret/myapp
+  stronghold kv get demo-kv/myapp-secret
   ```  
   
   Команда с использованием curl:
   ```bash
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
-    ${VAULT_ADDR}/v1/secret/data/myapp
+    ${VAULT_ADDR}/v1/demo-kv/data/myapp-secret
   ```
 
 * По умолчанию метод аутентификации в Stronghold через Kubernetes API кластера, на котором запущен сам Stronghold, – включён и настроен под именем `kubernetes_local`. Если требуется настроить доступ через удалённые кластера, задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Stronghold с помощью Kubernetes API для каждого кластера:
@@ -152,11 +152,11 @@ export VAULT_ADDR=https://secretstoreexample.com
     ${VAULT_ADDR}/v1/auth/remote-kube-1/config
   ```
 
-* Создаём в Stronghold политику с названием `backend`, разрешающую чтение секрета `myapp`:
+* Создаём в Stronghold политику с названием `myapp-ro-policy`, разрешающую чтение секрета `myapp-secret`:
 
   ```bash
-  stronghold policy write backend - <<EOF
-  path "secret/data/myapp" {
+  stronghold policy write myapp-ro-policy - <<EOF
+  path "demo-kv/data/myapp-secret" {
     capabilities = ["read"]
   }
   EOF
@@ -166,12 +166,12 @@ export VAULT_ADDR=https://secretstoreexample.com
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"policy":"path \"secret/data/myapp\" {\n capabilities = [\"read\"]\n}\n"}' \
-    ${VAULT_ADDR}/v1/sys/policies/acl/backend
+    --data '{"policy":"path \"demo-kv/data/myapp-secret\" {\n capabilities = [\"read\"]\n}\n"}' \
+    ${VAULT_ADDR}/v1/sys/policies/acl/myapp-ro-policy
   ```
 
 
-* Создаём роль, состоящую из названия пространства имён и политики. Связываем её с ServiceAccount `myapp` из пространства имён `my-namespace` и политикой `backend`:
+* Создаём роль, состоящую из названия пространства имён и политики. Связываем её с ServiceAccount `myapp-sa` из пространства имён `myapp-namespace` и политикой `myapp-ro-policy`:
 
   {{< alert level="danger">}}
   **Важно!**  
@@ -180,10 +180,10 @@ export VAULT_ADDR=https://secretstoreexample.com
   {{< /alert >}}
 
   ```bash
-  stronghold write auth/kubernetes_local/role/my-namespace_backend \
-      bound_service_account_names=myapp \
-      bound_service_account_namespaces=my-namespace \
-      policies=backend \
+  stronghold write auth/kubernetes_local/role/myapp-role \
+      bound_service_account_names=myapp-sa \
+      bound_service_account_namespaces=myapp-namespace \
+      policies=myapp-ro-policy \
       ttl=10m
   ```
   Команда с использованием curl:
@@ -191,18 +191,18 @@ export VAULT_ADDR=https://secretstoreexample.com
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
-    ${VAULT_ADDR}/v1/auth/kubernetes_local/role/my-namespace_backend
+    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"myapp-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/kubernetes_local/role/myapp-role
   ```
 
 
 * Повторяем то же самое для остальных кластеров, указав другой путь аутентификации:
 
   ```bash
-  stronghold write auth/remote-kube-1/role/my-namespace_backend \
-      bound_service_account_names=myapp \
-      bound_service_account_namespaces=my-namespace \
-      policies=backend \
+  stronghold write auth/remote-kube-1/role/myapp-role \
+      bound_service_account_names=myapp-sa \
+      bound_service_account_namespaces=myapp-namespace \
+      policies=myapp-ro-policy \
       ttl=10m
   ```
   Команда с использованием curl:
@@ -210,8 +210,8 @@ export VAULT_ADDR=https://secretstoreexample.com
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"bound_service_account_names":"myapp","bound_service_account_namespaces":"my-namespace","policies":"backend","ttl":"10m"}' \
-    ${VAULT_ADDR}/v1/auth/remote-kube-1/role/my-namespace_backend
+    --data '{"bound_service_account_names":"myapp-sa","bound_service_account_namespaces":"myapp-namespace","policies":"myapp-ro-policy","ttl":"10m"}' \
+    ${VAULT_ADDR}/v1/auth/remote-kube-1/role/myapp-role
   ```
 
 
@@ -220,12 +220,12 @@ export VAULT_ADDR=https://secretstoreexample.com
   Рекомендованное значение TTL для токена Kubernetes составляет 10m.
   {{< /alert >}}
 
-Эти настройки позволяют любому поду из пространства имён `my-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp`, аутентифицироваться и авторизоваться в Stronghold для чтения секретов согласно политике `backend`.
+Эти настройки позволяют любому поду из пространства имён `myapp-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp-sa`, аутентифицироваться и авторизоваться в Stronghold для чтения секретов согласно политике `myapp-ro-policy`.
 
 * Создадим namespace и ServiceAccount в указанном namespace:
   ```bash
-  kubectl create namespace my-namespace
-  kubectl -n my-namespace create serviceaccount myapp
+  kubectl create namespace myapp-namespace
+  kubectl -n myapp-namespace create serviceaccount myapp-sa
   ```
 
 ## Как разрешить ServiceAccount авторизоваться в Stronghold?
@@ -240,13 +240,9 @@ Stronghold может использовать различные авториз
 
 ### Как работает
 
-При включении модуля в кластере появляется mutating-webhook, который при наличии у пода аннотации `secrets-store.deckhouse.io/role` изменяет манифест пода,
-добавляя туда инжектор. В измененном поде добавляется инит-контейнер, который помещает из служебного образа собранный статически бинарный файл-инжектор
-в общую для всех контейнеров пода временную директорию. В остальных контейнерах оригинальные команды запуска заменяются на запуск файла-инжектора,
-который получает из Vault-совместимого хранилища необходимые данные, используя для подключения сервисный аккаунт приложения, помещает эти переменные в ENV процесса, после чего выполняет системный вызов execve, запуская оригинальную команду.
+При включении модуля в кластере появляется mutating-webhook, который при наличии у пода аннотации `secrets-store.deckhouse.io/role` изменяет манифест пода, добавляя туда инжектор. В измененном поде добавляется инит-контейнер, который помещает из служебного образа собранный статически бинарный файл-инжектор в общую для всех контейнеров пода временную директорию. В остальных контейнерах оригинальные команды запуска заменяются на запуск файла-инжектора, который получает из Vault-совместимого хранилища необходимые данные, используя для подключения сервисный аккаунт приложения, помещает эти переменные в ENV процесса, после чего выполняет системный вызов execve, запуская оригинальную команду.
 
-Если в манифесте пода у контейнера отсутствует команда запуска, то выполняется извлечение манифеста образа из хранилица образов (реджистри),
-и команда извлекается из него.
+Если в манифесте пода у контейнера отсутствует команда запуска, то выполняется извлечение манифеста образа из хранилица образов (реджистри), и команда извлекается из него.
 Для получения манифеста из приватного хранилища образов используются заданные в манифесте пода учетные данные из `imagePullSecrets`.
 
 Доступные аннотации, позволяющие изменять поведение инжектора
@@ -262,20 +258,20 @@ Stronghold может использовать различные авториз
 
 Используя инжектор вы сможете задавать в манифестах пода вместо значений env-шаблоны, которые будут заменяться на этапе запуска контейнера на значения из хранилища.
 
-Пример: извлечь из Vault-совместимого хранилища ключ `mypassword` из kv2-секрета по адресу `secret/myapp`:
+Пример: извлечь из Vault-совместимого хранилища ключ `DB_PASS` из kv2-секрета по адресу `demo-kv/myapp-secret`:
 
 ```yaml
 env:
   - name: PASSWORD
-    value: secrets-store:secret/data/myapp#mypassword
+    value: secrets-store:demo-kv/data/myapp-secret#DB_PASS
 ```
 
-Пример: извлечь из Vault-совместимого хранилища ключ `mypassword` версии `4` из kv2-секрета по адресу `secret/myapp`:
+Пример: извлечь из Vault-совместимого хранилища ключ `DB_PASS` версии `4` из kv2-секрета по адресу `demo-kv/myapp-secret`:
 
 ```yaml
 env:
   - name: PASSWORD
-    value: secrets-store:secret/data/myapp#mypassword#4
+    value: secrets-store:demo-kv/data/myapp-secret#DB_PASS#4
 ```
 
 Шаблон может также находиться в ConfigMap или в Secret и быть подключен с помощью `envFrom`
@@ -292,19 +288,19 @@ envFrom:
 
 ### Подключение переменных из ветки хранилища (всех ключей одного секрета)
 
-Создадим под с названием `myapp1`, который подключит все переменные из хранилища по пути `secret/data/myapp`:
+Создадим под с названием `myapp1`, который подключит все переменные из хранилища по пути `demo-kv/data/myapp-secret`:
 
 ```yaml
 kind: Pod
 apiVersion: v1
 metadata:
   name: myapp1
-  namespace: my-namespace
+  namespace: myapp-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "my-namespace_backend"
-    secrets-store.deckhouse.io/env-from-path: secret/data/myapp
+    secrets-store.deckhouse.io/role: "myapp-role"
+    secrets-store.deckhouse.io/env-from-path: demo-kv/data/myapp-secret
 spec:
-  serviceAccountName: myapp
+  serviceAccountName: myapp-sa
   containers:
   - image: alpine:3.20
     name: myapp
@@ -320,16 +316,16 @@ spec:
 kubectl create --filename myapp1.yaml
 ```
 
-Проверим логи пода после его запуска, мы должны увидеть все переменные из `secret/data/myapp`:
+Проверим логи пода после его запуска, мы должны увидеть все переменные из `demo-kv/data/myapp-secret`:
 
 ```bash
-kubectl -n my-namespace logs myapp1
+kubectl -n myapp-namespace logs myapp1
 ```
 
 Удалим под
 
 ```bash
-kubectl -n my-namespace delete pod myapp1 --force
+kubectl -n myapp-namespace delete pod myapp1 --force
 ```
 
 ### Подключение явно заданных переменных из хранилища
@@ -341,18 +337,18 @@ kind: Pod
 apiVersion: v1
 metadata:
   name: myapp2
-  namespace: my-namespace
+  namespace: myapp-namespace
   annotations:
-    secrets-store.deckhouse.io/role: "my-namespace_backend"
+    secrets-store.deckhouse.io/role: "myapp-role"
 spec:
-  serviceAccountName: myapp
+  serviceAccountName: myapp-sa
   containers:
   - image: alpine:3.20
     env:
     - name: DB_USER
-      value: secrets-store:secret/data/myapp#DB_USER
+      value: secrets-store:demo-kv/data/myapp-secret#DB_USER
     - name: DB_PASS
-      value: secrets-store:secret/data/myapp#DB_PASS
+      value: secrets-store:demo-kv/data/myapp-secret#DB_PASS
     name: myapp
     command:
     - sh
@@ -366,39 +362,39 @@ spec:
 kubectl create --filename myapp2.yaml
 ```
 
-Проверим логи пода после его запуска, мы должны увидеть переменные из `secret/data/myapp`:
+Проверим логи пода после его запуска, мы должны увидеть переменные из `demo-kv/data/myapp-secret`:
 
 ```bash
-kubectl -n my-namespace logs myapp2
+kubectl -n myapp-namespace logs myapp2
 ```
 
 Удалим под
 
 ```bash
-kubectl -n my-namespace delete pod myapp2 --force
+kubectl -n myapp-namespace delete pod myapp2 --force
 ```
 
 ## Монтирование секрета из хранилища в качестве файла в контейнер
 
-Для доставки секретов в приложение нужно использовать CustomResource “SecretStoreImport”.
+Для доставки секретов в приложение нужно использовать CustomResource `SecretStoreImport`.
 
-В этом примере используем уже созданные ServiceAccount `myapp` и namespace `my-namespace` из шага [Подготовка тестового окружения](#подготовка-тестового-окружения)
+В этом примере используем уже созданные ServiceAccount `myapp-sa` и namespace `myapp-namespace` из шага [Подготовка тестового окружения](#подготовка-тестового-окружения)
 
-Создайте в кластере CustomResource _SecretsStoreImport_ с названием “myapp”:
+Создайте в кластере CustomResource _SecretsStoreImport_ с названием `myapp-ssi`:
 
 ```yaml
 apiVersion: deckhouse.io/v1alpha1
 kind: SecretsStoreImport
 metadata:
   name: myapp-ssi
-  namespace: my-namespace
+  namespace: myapp-namespace
 spec:
   type: CSI
-  role: my-namespace_backend
+  role: myapp-role
   files:
     - name: "db-password"
       source:
-        path: "secret/data/myapp"
+        path: "demo-kv/data/myapp-secret"
         key: "DB_PASS"
 ```
 
@@ -409,9 +405,9 @@ kind: Pod
 apiVersion: v1
 metadata:
   name: myapp3
-  namespace: my-namespace
+  namespace: myapp-namespace
 spec:
-  serviceAccountName: myapp
+  serviceAccountName: myapp-sa
   containers:
   - image: alpine:3.20
     name: myapp
@@ -430,17 +426,17 @@ spec:
       volumeAttributes:
         secretsStoreImport: "myapp-ssi"
 ```
-После применения этих ресурсов будет запущен под с названием `backend`, внутри которого будет каталог `/mnt/secrets` с примонтированным внутрь томом `secrets`. Внутри каталога будет лежать файл `db-password` с паролем от базы данных из Stronghold.
+После применения этих ресурсов будет создан под, внутри которого запустится контейнер с названием `backend`. В файловой системе этого контейнера будет каталог `/mnt/secrets` с примонтированным к нему томом `secrets`. Внутри этого каталога будет лежать файл `db-password` с паролем от базы данных (`DB_PASS`) из хранилища ключ-значение Stronghold.
 
 Проверьте логи пода после его запуска (должно выводиться содержимое файла `/mnt/secrets/db-password`):
 ```bash
-kubectl -n my-namespace logs myapp3
+kubectl -n myapp-namespace logs myapp3
 ```
 
 Удалите под:
 
 ```bash
-kubectl -n my-namespace delete pod myapp3 --force
+kubectl -n myapp-namespace delete pod myapp3 --force
 ```
 
 ### Функция авторотации
@@ -509,3 +505,13 @@ for {
      volumeAttributes:
        secretsStoreImport: "python-backend"
 ```
+
+## Как получить бинарный файл stronghold
+
+На мастер-ноде кластера необходимо выполнить следующие команды через `root` пользователя:
+```bash
+mkdir $HOME/bin
+sudo cp /proc/$(pidof stronghold)/root/usr/bin/stronghold bin && sudo chmod a+x bin/stronghold
+export PATH=$PATH:$HOME/bin
+```
+Команда `stronhold` готова к использованию.
