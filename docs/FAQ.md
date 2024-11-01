@@ -25,7 +25,7 @@ This section provides an example of the settings that need to be made so that th
 * Enable and create the Key-Value store:
 
   ```bash
-  vault secrets enable -path=secret -version=2 kv
+  stronghold secrets enable -path=secret -version=2 kv
   ```
 
   The same command as a curl HTTP request:
@@ -41,7 +41,7 @@ This section provides an example of the settings that need to be made so that th
 * Set the database password as the secret value:
 
   ```bash
-  vault kv put secret/database-for-python-app password="db-secret-password"
+  stronghold kv put secret/database-for-python-app password="db-secret-password"
   ```
 
   The curl equivalent of the above command:
@@ -57,7 +57,7 @@ This section provides an example of the settings that need to be made so that th
 * Double-check that the password has been saved successfully:
 
   ```bash
-  vault kv get secret/database-for-python-app
+  stronghold kv get secret/database-for-python-app
   ```
 
   The curl equivalent of the above command:
@@ -71,7 +71,7 @@ This section provides an example of the settings that need to be made so that th
 * Set the authentication path (`authPath`) and enable authentication and authorization in Vault using the Kubernetes API:
 
   ```bash
-  vault auth enable -path=main-kube kubernetes
+  stronghold auth enable -path=main-kube kubernetes
   ```
 
   The curl equivalent of the above command:
@@ -87,7 +87,7 @@ This section provides an example of the settings that need to be made so that th
 * If you have more than one cluster, set the authentication path (`authPath`) and enable authentication and authorization in Vault using the Kubernetes API of the second cluster:
 
   ```bash
-  vault auth enable -path=secondary-kube kubernetes
+  stronghold auth enable -path=secondary-kube kubernetes
   ```
 
   The curl equivalent of the above command:
@@ -103,7 +103,7 @@ This section provides an example of the settings that need to be made so that th
 * Set the Kubernetes API address for each cluster (in this case, it is the K8s's API server service):
 
   ```bash
-  vault write auth/main-kube/config \
+  stronghold write auth/main-kube/config \
     kubernetes_host="https://api.kube.my-deckhouse.com"
   ```
 
@@ -119,7 +119,7 @@ This section provides an example of the settings that need to be made so that th
   For another cluster:
 
   ```bash
-  vault write auth/secondary-kube/config \
+  stronghold write auth/secondary-kube/config \
     kubernetes_host="https://10.11.12.10:443"
   ```
 
@@ -136,7 +136,7 @@ This section provides an example of the settings that need to be made so that th
 * Create a policy in Vault called "backend" that allows reading of the `database-for-python-app` secret:
 
   ```bash
-  vault policy write backend - <<EOF
+  stronghold policy write backend - <<EOF
   path "secret/data/database-for-python-app" {
   capabilities = ["read"]
   }
@@ -162,7 +162,7 @@ This section provides an example of the settings that need to be made so that th
   {{< /alert >}}
 
   ```bash
-  vault write auth/main-kube/role/my-namespace1_backend \
+  stronghold write auth/main-kube/role/my-namespace1_backend \
     bound_service_account_names=backend-sa \
     bound_service_account_namespaces=my-namespace1 \
     policies=backend \
@@ -182,7 +182,7 @@ This section provides an example of the settings that need to be made so that th
   Do the same for the second K8s cluster:
 
   ```bash
-  vault write auth/secondary-kube/role/my-namespace1_backend \
+  stronghold write auth/secondary-kube/role/my-namespace1_backend \
     bound_service_account_names=backend-sa \
     bound_service_account_namespaces=my-namespace1 \
     policies=backend \

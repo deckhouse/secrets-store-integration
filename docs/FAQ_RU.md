@@ -27,7 +27,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Включим и создадим Key-Value хранилище:
 
   ```bash
-  vault secrets enable -path=secret -version=2 kv
+  stronghold secrets enable -path=secret -version=2 kv
   ```
   Команда с использованием curl:
 
@@ -44,7 +44,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Зададим пароль базы в качестве значения секрета:
 
   ```bash
-  vault kv put secret/database-for-python-app password="db-secret-password"
+  stronghold kv put secret/database-for-python-app password="db-secret-password"
   ```
   Команда с использованием curl:
 
@@ -61,7 +61,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Проверим, правильно ли записался пароль:
 
   ```bash
-  vault kv get secret/database-for-python-app
+  stronghold kv get secret/database-for-python-app
   ```  
   
   Команда с использованием curl:
@@ -77,7 +77,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Vault с помощью Kubernetes API:
 
   ```bash
-  vault auth enable -path=main-kube kubernetes
+  stronghold auth enable -path=main-kube kubernetes
   ```
   Команда с использованием curl:
   ```bash
@@ -92,7 +92,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Если требуется настроить доступ для более чем одного кластера, то задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Vault с помощью Kubernetes API для каждого кластера кластера:
 
   ```bash
-  vault auth enable -path=secondary-kube kubernetes
+  stronghold auth enable -path=secondary-kube kubernetes
   ```
   Команда с использованием curl:
   ```bash
@@ -107,7 +107,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Задаём адрес Kubernetes API для каждого кластера:
 
   ```bash
-  vault write auth/main-kube/config \
+  stronghold write auth/main-kube/config \
     kubernetes_host="https://api.kube.my-deckhouse.com"
   ```
   Команда с использованием curl:
@@ -123,7 +123,7 @@ export VAULT_ADDR=https://secretstoreexample.com
   Для другого кластера:
 
   ```bash
-  vault write auth/secondary-kube/config \
+  stronghold write auth/secondary-kube/config \
     kubernetes_host="https://10.11.12.10:443"
   ```
   Команда с использованием curl:
@@ -139,7 +139,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Создаём в Vault политику с названием «backend», разрешающую чтение секрета `database-for-python-app`:
 
   ```bash
-  vault policy write backend - <<EOF
+  stronghold policy write backend - <<EOF
   path "secret/data/database-for-python-app" {
     capabilities = ["read"]
   }
@@ -164,7 +164,7 @@ export VAULT_ADDR=https://secretstoreexample.com
   {{< /alert >}}
 
   ```bash
-  vault write auth/main-kube/role/my-namespace1_backend \
+  stronghold write auth/main-kube/role/my-namespace1_backend \
       bound_service_account_names=backend-sa \
       bound_service_account_namespaces=my-namespace1 \
       policies=backend \
@@ -183,7 +183,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Повторяем то же самое для остальных кластеров, указав другой путь аутентификации:
 
   ```bash
-  vault write auth/secondary-kube/role/my-namespace1_backend \
+  stronghold write auth/secondary-kube/role/my-namespace1_backend \
       bound_service_account_names=backend-sa \
       bound_service_account_namespaces=my-namespace1 \
       policies=backend \
