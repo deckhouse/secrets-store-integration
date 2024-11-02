@@ -1,6 +1,6 @@
-ARG BASE_GOLANG_20_ALPINE=registry.deckhouse.io/base_images/golang:1.20.5-alpine3.18
+ARG BASE_GOLANG_23_ALPINE=registry.deckhouse.io/base_images/golang:1.23.1-alpine3.20
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
-FROM $BASE_GOLANG_20_ALPINE as artifact
+FROM $BASE_GOLANG_23_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/kubernetes-csi/livenessprobe.git
 ENV SOURCE_REPO=${SOURCE_REPO}
