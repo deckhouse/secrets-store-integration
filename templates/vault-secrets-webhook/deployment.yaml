@@ -67,6 +67,8 @@ spec:
           value: {{ include "helm_lib_module_image" (list . "envInjector") }}
         - name: TLS_SKIP_VERIFY
           value: "true"
+        - name: TELEMETRY_LISTEN_ADDRESS
+          value: "127.0.0.1:8000"
         {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "Manual" }}
         - name: ADDR
           value: {{ .Values.secretsStoreIntegration.connection.url }}
@@ -103,6 +105,41 @@ spec:
 {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
             {{- include "vault_secrets_webhook_resources" . | nindent 12 }}
 {{- end }}
+      - name: kube-rbac-proxy
+        {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 8 }}
+        image: {{ include "helm_lib_module_common_image" (list $ "kubeRbacProxy") }}
+        args:
+        - "--secure-listen-address=$(KUBE_RBAC_PROXY_LISTEN_ADDRESS):9889"
+        - "--v=2"
+        - "--logtostderr=true"
+        - "--stale-cache-interval=1h30m"
+        env:
+        - name: KUBE_RBAC_PROXY_LISTEN_ADDRESS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: KUBE_RBAC_PROXY_CONFIG
+          value: |
+            upstreams:
+            - upstream: http://127.0.0.1:8000/metrics
+              path: /metrics
+              authorization:
+                resourceAttributes:
+                  namespace: d8-{{ $.Chart.Name }}
+                  apiGroup: apps
+                  apiVersion: v1
+                  resource: deployments
+                  subresource: prometheus-metrics
+                  name: vault-secrets-webhook
+        ports:
+        - containerPort: 9889
+          name: https-metrics
+        resources:
+          requests:
+            {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
+          {{- if not ( .Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+            {{- include "helm_lib_container_kube_rbac_proxy_resources" . | nindent 14 }}
+          {{- end }}
       volumes:
         - name: serving-cert
           secret:
