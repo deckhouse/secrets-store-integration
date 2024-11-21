@@ -22,11 +22,11 @@
     ]
   },
   "description": "Secrets store webhook dashboard",
-  "editable": true,
+  "editable": false,
   "fiscalYearStartMonth": 0,
   "gnetId": 13685,
   "graphTooltip": 0,
-  "id": 36,
+  "id": 39,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -58,6 +58,7 @@
     },
     {
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
       "description": "",
@@ -106,9 +107,11 @@
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "count(sum(kubewebhook_mutating_webhook_review_duration_seconds_count) by (webhook_id)) OR on() vector(0)",
+          "editorMode": "code",
+          "expr": "count(sum(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}) by (webhook_id)) OR on() vector(0)",
           "interval": "",
           "legendFormat": "Mutating WH",
+          "range": true,
           "refId": "B"
         }
       ],
@@ -116,6 +119,7 @@
     },
     {
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
       "description": "",
@@ -165,7 +169,8 @@
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "(\n  sum(increase(kubewebhook_mutating_webhook_review_duration_seconds_count{mutated=\"true\"}[${range}]))\n) OR on() vector(0)",
+          "editorMode": "code",
+          "expr": "(\n  sum(increase(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\",mutated=\"true\",resource_namespace=~\"$namespace\"}[${range}]))\n) OR on() vector(0)",
           "instant": true,
           "interval": "",
           "legendFormat": "Mutated",
@@ -177,6 +182,7 @@
     },
     {
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
       "description": "",
@@ -203,7 +209,7 @@
         "x": 10,
         "y": 1
       },
-      "id": 168,
+      "id": 197,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -226,10 +232,11 @@
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "(\n  sum(increase(kubewebhook_validating_webhook_review_duration_seconds_count{allowed=\"true\"}[24h]))\n) OR on() vector(0)",
+          "editorMode": "code",
+          "expr": "(\n  sum(increase(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\",mutated=\"false\",resource_namespace=~\"$namespace\"}[24h]))\n) OR on() vector(0)",
           "instant": true,
           "interval": "",
-          "legendFormat": "Allowed",
+          "legendFormat": "Not mutated",
           "queryType": "randomWalk",
           "refId": "A"
         }
@@ -238,6 +245,7 @@
     },
     {
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
       "description": "",
@@ -286,7 +294,8 @@
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\"}[${interval}]))\nOR on() vector(0)",
+          "editorMode": "code",
+          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}]))\nOR on() vector(0)",
           "instant": false,
           "interval": "",
           "legendFormat": "Rev rate",
@@ -298,6 +307,7 @@
     },
     {
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
       "description": "",
@@ -328,7 +338,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 4,
         "w": 4,
         "x": 20,
         "y": 1
@@ -356,7 +366,8 @@
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "(\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\", success=\"false\"}[${interval}]))\n  /\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\"}[${interval}]))\n\n) OR on() vector (0)",
+          "editorMode": "code",
+          "expr": "(\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\",success=\"false\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}]))\n  /\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}]))\n\n) OR on() vector (0)",
           "instant": false,
           "interval": "",
           "legendFormat": "Rev errors",
@@ -367,240 +378,438 @@
       "type": "stat"
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "super-light-blue",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
+      "description": "The webhook reviews processing rate (left Y-axis) and its % rate errors (right Y-axis)",
+      "fill": 1,
+      "fillGradient": 4,
       "gridPos": {
-        "h": 4,
-        "w": 5,
+        "h": 9,
+        "w": 12,
         "x": 0,
         "y": 5
       },
-      "id": 199,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "vertical",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+      "hiddenSeries": false,
+      "id": 21,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": false
+      },
+      "percentage": false,
       "pluginVersion": "10.4.5",
-      "targets": [
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
         {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "count(sum(kubewebhook_validating_webhook_review_duration_seconds_count) by (webhook_id)) OR on() vector(0)",
-          "interval": "",
-          "legendFormat": "Validating WH",
-          "refId": "B"
+          "alias": "mutated: true",
+          "color": "#5794F2"
+        },
+        {
+          "alias": "error %",
+          "color": "#F2495C",
+          "stack": false,
+          "yaxis": 2
+        },
+        {
+          "alias": "mutated: false",
+          "color": "#DEB6F2"
         }
       ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__series.name} in the last ${range}",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(138, 221, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 5,
-        "y": 5
-      },
-      "id": 197,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
       "targets": [
         {
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "(\n  sum(increase(kubewebhook_mutating_webhook_review_duration_seconds_count{mutated=\"false\"}[24h]))\n) OR on() vector(0)",
-          "instant": true,
+          "editorMode": "code",
+          "expr": "sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}])) by (mutated)",
           "interval": "",
-          "legendFormat": "Not mutated",
+          "legendFormat": "mutated: {{mutated}}",
           "queryType": "randomWalk",
+          "range": true,
           "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "${__series.name} in the last ${range}",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(138, 221, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 10,
-        "y": 5
-      },
-      "id": 198,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
         {
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "(\n  sum(increase(kubewebhook_validating_webhook_review_duration_seconds_count{allowed=\"false\"}[24h]))\n) OR on() vector(0)",
+          "editorMode": "code",
+          "expr": "(\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\", success=\"false\",resource_namespace=~\"$namespace\"}[${interval}]))\n  OR on() vector(0)\n)\n/\n(\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}]))\n  OR on() vector(0)\n)",
           "interval": "",
-          "legendFormat": "Not Allowed",
+          "legendFormat": "error %",
+          "range": true,
           "refId": "B"
         }
       ],
-      "type": "stat"
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Webhook reviews rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rev/sec",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "percentunit",
+          "logBase": 1,
+          "max": "1",
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "light-yellow",
-                "value": null
-              }
-            ]
-          },
-          "unit": "warn/s"
-        },
-        "overrides": []
-      },
+      "description": "The latency of different percentiles for webhook reviews",
+      "fill": 1,
+      "fillGradient": 4,
       "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 15,
+        "h": 9,
+        "w": 12,
+        "x": 12,
         "y": 5
       },
-      "id": 11,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
+      "hiddenSeries": false,
+      "id": 24,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
       "pluginVersion": "10.4.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "p99",
+          "color": "#FA6400"
+        },
+        {
+          "alias": "p90",
+          "color": "#FF9830"
+        },
+        {
+          "alias": "p50",
+          "color": "#FFCB7D"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "sum(rate(kubewebhook_webhook_review_warnings_total[${interval}]))\nOR on() vector(0)",
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99,\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_bucket{webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}])) by (le)\n)",
           "interval": "",
-          "legendFormat": "warn rate",
+          "legendFormat": "p99",
+          "queryType": "randomWalk",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "uid": "$prometheus"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.90,\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_bucket{webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}])) by (le)\n)",
+          "interval": "",
+          "legendFormat": "p90",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "uid": "$prometheus"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50,\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_bucket{webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}])) by (le)\n)",
+          "interval": "",
+          "legendFormat": "p50",
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Webhook reviews latency",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "description": "The webhooks reviews processing rate by operation",
+      "fill": 1,
+      "fillGradient": 4,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "hiddenSeries": false,
+      "id": 207,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": false
+      },
+      "percentage": false,
+      "pluginVersion": "10.4.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}])) by (operation)\n",
+          "interval": "",
+          "legendFormat": "{{operation}}",
+          "queryType": "randomWalk",
+          "range": true,
           "refId": "A"
         }
       ],
-      "type": "stat"
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Webhook review rate by operation",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:70",
+          "format": "rev/sec",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:71",
+          "format": "percentunit",
+          "logBase": 1,
+          "max": "1",
+          "min": "0",
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$prometheus"
+      },
+      "description": "The webhooks reviews processing rate by version",
+      "fill": 1,
+      "fillGradient": 4,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": false
+      },
+      "percentage": false,
+      "pluginVersion": "10.4.5",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "$$hashKey": "object:301",
+          "alias": "v1",
+          "color": "#B877D9"
+        },
+        {
+          "$$hashKey": "object:302",
+          "alias": "v1beta1",
+          "color": "#FADE2A"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "$prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}])) by (webhook_version)\n",
+          "interval": "",
+          "legendFormat": "{{version}}",
+          "queryType": "randomWalk",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "Webhook review rate by version",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:315",
+          "format": "rev/sec",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:316",
+          "format": "percentunit",
+          "logBase": 1,
+          "max": "1",
+          "min": "0",
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
     },
     {
       "datasource": {
@@ -686,7 +895,7 @@
         "h": 9,
         "w": 9,
         "x": 0,
-        "y": 9
+        "y": 24
       },
       "id": 166,
       "options": {
@@ -714,7 +923,8 @@
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "(\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\", success=\"false\"}[5m])) by (webhook_version, webhook_id)\n  /\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\"}[5m])) by (webhook_version, webhook_id)\n) > 0",
+          "editorMode": "code",
+          "expr": "(\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\", success=\"false\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[5m])) by (webhook_version, webhook_id)\n  /\n  sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[5m])) by (webhook_version, webhook_id)\n) > 0",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -762,6 +972,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": {
+        "type": "prometheus",
         "uid": "$prometheus"
       },
       "description": "The webhooks reviews processing rate by resource",
@@ -771,7 +982,7 @@
         "h": 9,
         "w": 15,
         "x": 9,
-        "y": 9
+        "y": 24
       },
       "hiddenSeries": false,
       "id": 208,
@@ -806,10 +1017,12 @@
           "datasource": {
             "uid": "$prometheus"
           },
-          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\"}[${interval}])) by (resource_kind)",
+          "editorMode": "code",
+          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\",webhook_id=\"${mutating_wh}\",resource_namespace=~\"$namespace\"}[${interval}])) by (resource_kind)",
           "interval": "",
           "legendFormat": "{{resource_kind}}",
           "queryType": "randomWalk",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -846,1197 +1059,6 @@
       "yaxis": {
         "align": false
       }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "The webhooks reviews processing rate by operation",
-      "fill": 1,
-      "fillGradient": 4,
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 0,
-        "y": 18
-      },
-      "hiddenSeries": false,
-      "id": 207,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": false
-      },
-      "percentage": false,
-      "pluginVersion": "10.4.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\"}[${interval}])) by (operation)\n",
-          "interval": "",
-          "legendFormat": "{{operation}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Webhook review rate by operation",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:70",
-          "format": "rev/sec",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:71",
-          "format": "percentunit",
-          "logBase": 1,
-          "max": "1",
-          "min": "0",
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "The webhooks reviews processing rate by version",
-      "fill": 1,
-      "fillGradient": 4,
-      "gridPos": {
-        "h": 10,
-        "w": 12,
-        "x": 12,
-        "y": 18
-      },
-      "hiddenSeries": false,
-      "id": 12,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": false
-      },
-      "percentage": false,
-      "pluginVersion": "10.4.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:301",
-          "alias": "v1",
-          "color": "#B877D9"
-        },
-        {
-          "$$hashKey": "object:302",
-          "alias": "v1beta1",
-          "color": "#FADE2A"
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "sum(rate({__name__=~\"kubewebhook_(mutating|validating)_webhook_review_duration_seconds_count\"}[${interval}])) by (webhook_version)\n",
-          "interval": "",
-          "legendFormat": "{{version}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Webhook review rate by version",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:315",
-          "format": "rev/sec",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:316",
-          "format": "percentunit",
-          "logBase": 1,
-          "max": "1",
-          "min": "0",
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${ds_prometheus}"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "id": 16,
-      "panels": [],
-      "repeat": "validating_wh",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${ds_prometheus}"
-          },
-          "refId": "A"
-        }
-      ],
-      "title": "${validating_wh} validating webhook detail",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "\"${__series.name}\" validating webhook",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(255, 255, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 29
-      },
-      "id": 174,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "vertical",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "name",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "count(increase(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_id=\"${validating_wh}\"}[${range}])) by (webhook_id)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{webhook_id}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "displayName": "${__series.name} in the last ${range}",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "light-yellow",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 5,
-        "x": 0,
-        "y": 31
-      },
-      "id": 173,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(sum(increase(kubewebhook_webhook_review_warnings_total{webhook_id=\"${validating_wh}\"}[${range}])) OR on() vector(0))",
-          "interval": "",
-          "legendFormat": "warnings",
-          "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "displayName": "${__series.name} in the last ${range} ",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(138, 221, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 5,
-        "x": 5,
-        "y": 31
-      },
-      "id": 169,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(\n  sum(increase(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_id=\"${validating_wh}\",allowed=\"true\"}[${range}]))\n) OR on() vector(0)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "Allowed",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "displayName": "${__series.name} in the last ${range} ",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(138, 221, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 5,
-        "x": 10,
-        "y": 31
-      },
-      "id": 180,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(\n  sum(increase(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_id=\"${validating_wh}\",allowed=\"false\"}[${range}]))\n) OR on() vector(0)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "Not Allowed",
-          "refId": "B"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "The webhook reviews processing rate (left Y-axis) and its % rate errors (right Y-axis)",
-      "fill": 1,
-      "fillGradient": 4,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 33
-      },
-      "hiddenSeries": false,
-      "id": 19,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": false
-      },
-      "percentage": false,
-      "pluginVersion": "10.4.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "$$hashKey": "object:400",
-          "alias": "Allowed: true",
-          "color": "#5794F2"
-        },
-        {
-          "$$hashKey": "object:401",
-          "alias": "error %",
-          "color": "#F2495C",
-          "stack": false,
-          "yaxis": 2
-        },
-        {
-          "$$hashKey": "object:402",
-          "alias": "Allowed: false",
-          "color": "#DEB6F2"
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "sum(rate(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_id=\"${validating_wh}\", success=\"true\"}[${interval}])) by (allowed)",
-          "interval": "",
-          "legendFormat": "Allowed: {{allowed}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(\n  sum(rate(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_id=\"${validating_wh}\", success=\"false\"}[${interval}]))\n  OR on() vector(0)\n)\n/\n(\n  sum(rate(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_id=\"${validating_wh}\"}[${interval}]))\n  OR on() vector(0)\n)",
-          "interval": "",
-          "legendFormat": "error %",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Webhook reviews rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:425",
-          "format": "rev/sec",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:426",
-          "format": "percentunit",
-          "logBase": 1,
-          "max": "1",
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "The latency of different percentiles for webhook reviews",
-      "fill": 1,
-      "fillGradient": 4,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 33
-      },
-      "hiddenSeries": false,
-      "id": 20,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "10.4.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "p99",
-          "color": "#FA6400"
-        },
-        {
-          "alias": "p90",
-          "color": "#FF9830"
-        },
-        {
-          "alias": "p50",
-          "color": "#FFCB7D"
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "histogram_quantile(0.99,\n  sum(rate(kubewebhook_validating_webhook_review_duration_seconds_bucket{webhook_id=\"${validating_wh}\"}[${interval}])) by (le)\n)",
-          "interval": "",
-          "legendFormat": "p99",
-          "queryType": "randomWalk",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "histogram_quantile(0.90,\n  sum(rate(kubewebhook_validating_webhook_review_duration_seconds_bucket{webhook_id=\"${validating_wh}\"}[${interval}])) by (le)\n)",
-          "interval": "",
-          "legendFormat": "p90",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "histogram_quantile(0.50,\n  sum(rate(kubewebhook_validating_webhook_review_duration_seconds_bucket{webhook_id=\"${validating_wh}\"}[${interval}])) by (le)\n)",
-          "interval": "",
-          "legendFormat": "p50",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Webhook reviews latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "s",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "collapsed": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${ds_prometheus}"
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 42
-      },
-      "id": 14,
-      "panels": [],
-      "repeat": "mutating_wh",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${ds_prometheus}"
-          },
-          "refId": "A"
-        }
-      ],
-      "title": "${mutating_wh} mutating webhook detail",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "displayName": "\"${__series.name}\" mutating webhook",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(255, 255, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 43
-      },
-      "id": 175,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "vertical",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "name",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "count(increase(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\"}[${range}])) by (webhook_id)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{webhook_id}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "displayName": "${__series.name} in the last ${range}",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "light-yellow",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 5,
-        "x": 0,
-        "y": 45
-      },
-      "id": 181,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(sum(increase(kubewebhook_webhook_review_warnings_total{webhook_id=\"${mutating_wh}\"}[${range}])) OR on() vector(0))",
-          "interval": "",
-          "legendFormat": "warnings",
-          "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "displayName": "${__series.name} in the last ${range} ",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(138, 221, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 5,
-        "x": 5,
-        "y": 45
-      },
-      "id": 182,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(\n  sum(increase(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\",mutated=\"true\"}[${range}]))\n) OR on() vector(0)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "Mutated",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 0,
-          "displayName": "${__series.name} in the last ${range} ",
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "rgb(138, 221, 255)",
-                "value": null
-              }
-            ]
-          },
-          "unit": "none"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 5,
-        "x": 10,
-        "y": 45
-      },
-      "id": 189,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "last"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "10.4.5",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(\n  sum(increase(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\",mutated=\"false\"}[${range}]))\n) OR on() vector(0)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "Not mutated",
-          "queryType": "randomWalk",
-          "refId": "A"
-        }
-      ],
-      "type": "stat"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "The webhook reviews processing rate (left Y-axis) and its % rate errors (right Y-axis)",
-      "fill": 1,
-      "fillGradient": 4,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 47
-      },
-      "hiddenSeries": false,
-      "id": 21,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": false
-      },
-      "percentage": false,
-      "pluginVersion": "10.4.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "mutated: true",
-          "color": "#5794F2"
-        },
-        {
-          "alias": "error %",
-          "color": "#F2495C",
-          "stack": false,
-          "yaxis": 2
-        },
-        {
-          "alias": "mutated: false",
-          "color": "#DEB6F2"
-        }
-      ],
-      "spaceLength": 10,
-      "stack": true,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\"}[${interval}])) by (mutated)",
-          "interval": "",
-          "legendFormat": "mutated: {{mutated}}",
-          "queryType": "randomWalk",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "(\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\", success=\"false\"}[${interval}]))\n  OR on() vector(0)\n)\n/\n(\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_id=\"${mutating_wh}\"}[${interval}]))\n  OR on() vector(0)\n)",
-          "interval": "",
-          "legendFormat": "error %",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Webhook reviews rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "rev/sec",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "format": "percentunit",
-          "logBase": 1,
-          "max": "1",
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "uid": "$prometheus"
-      },
-      "description": "The latency of different percentiles for webhook reviews",
-      "fill": 1,
-      "fillGradient": 4,
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 47
-      },
-      "hiddenSeries": false,
-      "id": 24,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "10.4.5",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [
-        {
-          "alias": "p99",
-          "color": "#FA6400"
-        },
-        {
-          "alias": "p90",
-          "color": "#FF9830"
-        },
-        {
-          "alias": "p50",
-          "color": "#FFCB7D"
-        }
-      ],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "histogram_quantile(0.99,\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_bucket{webhook_id=\"${mutating_wh}\"}[${interval}])) by (le)\n)",
-          "interval": "",
-          "legendFormat": "p99",
-          "queryType": "randomWalk",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "histogram_quantile(0.90,\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_bucket{webhook_id=\"${mutating_wh}\"}[${interval}])) by (le)\n)",
-          "interval": "",
-          "legendFormat": "p90",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "uid": "$prometheus"
-          },
-          "expr": "histogram_quantile(0.50,\n  sum(rate(kubewebhook_mutating_webhook_review_duration_seconds_bucket{webhook_id=\"${mutating_wh}\"}[${interval}])) by (le)\n)",
-          "interval": "",
-          "legendFormat": "p50",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "Webhook reviews latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "s",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
     }
   ],
   "refresh": "30s",
@@ -2046,9 +1068,9 @@
     "list": [
       {
         "current": {
-          "selected": true,
-          "text": "default",
-          "value": "default"
+          "selected": false,
+          "text": "longterm",
+          "value": "P99D6B799F5C439F2"
         },
         "hide": 0,
         "includeAll": false,
@@ -2138,42 +1160,29 @@
       },
       {
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
+          "selected": false,
+          "text": "vault-secrets-pods",
+          "value": "vault-secrets-pods"
         },
-        "hide": 0,
-        "includeAll": true,
-        "label": "Version",
-        "multi": true,
-        "name": "wh_version",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Webhook",
+        "multi": false,
+        "name": "mutating_wh",
         "options": [
           {
             "selected": true,
-            "text": "All",
-            "value": "$__all"
-          },
-          {
-            "selected": false,
-            "text": "v1beta1",
-            "value": "v1beta1"
-          },
-          {
-            "selected": false,
-            "text": "v1",
-            "value": "v1"
+            "text": "vault-secrets-pods",
+            "value": "vault-secrets-pods"
           }
         ],
-        "query": "v1beta1,v1",
+        "query": "vault-secrets-pods",
         "queryValue": "",
         "skipUrlSync": false,
         "type": "custom"
       },
       {
+        "allValue": "",
         "current": {
           "selected": true,
           "text": [
@@ -2184,60 +1193,26 @@
           ]
         },
         "datasource": {
-          "uid": "$prometheus"
+          "type": "prometheus",
+          "uid": "${prometheus}"
         },
-        "definition": "label_values(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_version=~\"$wh_version\"}, webhook_id)",
+        "definition": "label_values(kubewebhook_mutating_webhook_review_duration_seconds_sum,resource_namespace)",
         "hide": 0,
         "includeAll": true,
-        "label": "Mutating",
+        "label": "Namespace",
         "multi": true,
-        "name": "mutating_wh",
+        "name": "namespace",
         "options": [],
         "query": {
-          "query": "label_values(kubewebhook_mutating_webhook_review_duration_seconds_count{webhook_version=~\"$wh_version\"}, webhook_id)",
-          "refId": "k8s-ds-mutating_wh-Variable-Query"
+          "qryType": 1,
+          "query": "label_values(kubewebhook_mutating_webhook_review_duration_seconds_sum,resource_namespace)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
-        "refresh": 2,
+        "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": {
-          "uid": "$prometheus"
-        },
-        "definition": "label_values(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_version=~\"$wh_version\"}, webhook_id)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Validating",
-        "multi": true,
-        "name": "validating_wh",
-        "options": [],
-        "query": {
-          "query": "label_values(kubewebhook_validating_webhook_review_duration_seconds_count{webhook_version=~\"$wh_version\"}, webhook_id)",
-          "refId": "k8s-ds-validating_wh-Variable-Query"
-        },
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
+        "type": "query"
       },
       {
         "auto": true,
@@ -2275,8 +1250,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Secrets strore webhook",
-  "uid": "stronghold-webhook",
+  "title": "Secrets strore webhook Copy",
+  "uid": "be4n4hpxe02rke",
   "version": 1,
   "weekStart": ""
 }
