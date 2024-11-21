@@ -1069,7 +1069,7 @@
       {
         "current": {
           "selected": false,
-          "text": "longterm",
+          "text": "default",
           "value": "P99D6B799F5C439F2"
         },
         "hide": 0,
@@ -1250,7 +1250,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Secrets strore webhook Copy",
+  "title": "Secrets strore webhook",
   "uid": "be4n4hpxe02rke",
   "version": 1,
   "weekStart": ""
