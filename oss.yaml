@@ -7,3 +7,7 @@
   description: HashiCorp Vault provider for the Secrets Store CSI driver allows you to get secrets stored in Vault and use the Secrets Store CSI driver interface to mount them into Kubernetes pods
   logo: https://developer.hashicorp.com/favicon.ico
   licence: Mozilla Public License, version 2.0
+- name: Vault Secrets Webhook
+  link: https://bank-vaults.dev/docs/mutating-webhook/
+  description: A Kubernetes mutating webhook that makes direct secret injection into Pods possible
+  licence: Apache License, version 2.0

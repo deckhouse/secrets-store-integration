@@ -1,4 +1,4 @@
-ARG BASE_GOLANG_23_ALPINE=registry.deckhouse.io/base_images/golang:1.23.1-alpine3.20
+ARG BASE_GOLANG_ALPINE=registry.deckhouse.io/base_images/golang:1.22.8-alpine
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
 
 FROM alpine:3.18 as mount
@@ -19,7 +19,7 @@ RUN cd / && \
     chmod 0700 /mount /umount && \
     cd / && rm -rf util-linux
 
-FROM $BASE_GOLANG_23_ALPINE as artifact
+FROM $BASE_GOLANG_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/kubernetes-sigs/secrets-store-csi-driver.git
 ENV SOURCE_REPO=${SOURCE_REPO}
