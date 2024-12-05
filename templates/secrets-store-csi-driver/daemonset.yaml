@@ -1,4 +1,4 @@
-{{- define "node_driver_registrar_resources" }}
+{{- define "csi_node_driver_registrar_resources" }}
 cpu: 10m
 memory: 15Mi
 {{- end }}
@@ -6,10 +6,12 @@ memory: 15Mi
 cpu: 10m
 memory: 50Mi
 {{- end }}
-{{- define "liveness_probe_resources" }}
+{{- define "csi_livenessprobe_resources" }}
 cpu: 10m
 memory: 15Mi
 {{- end }}
+{{- $kubeVersion := semver .Values.global.discovery.kubernetesVersion }}
+{{- if (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
 ---
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
@@ -20,9 +22,9 @@ metadata:
 spec:
   resourcePolicy:
     containerPolicies:
-    - containerName: node-driver-registrar
+    - containerName: csi-node-driver-registrar
       minAllowed:
-        {{- include "node_driver_registrar_resources" . | nindent 8 }}
+        {{- include "csi_node_driver_registrar_resources" . | nindent 8 }}
       maxAllowed:
         cpu: 100m
         memory: 200Mi
@@ -32,9 +34,9 @@ spec:
       maxAllowed:
         cpu: 100m
         memory: 200Mi
-    - containerName: liveness-probe
+    - containerName: csi-livenessprobe
       minAllowed:
-        {{- include "liveness_probe_resources" . | nindent 8 }}
+        {{- include "csi_livenessprobe_resources" . | nindent 8 }}
       maxAllowed:
         cpu: 50m
         memory: 50Mi
@@ -45,6 +47,7 @@ spec:
     name: csi-secrets-store
   updatePolicy:
     updateMode: "Initial"
+{{- end }}
 ---
 kind: DaemonSet
 apiVersion: apps/v1
@@ -74,8 +77,8 @@ spec:
         - /bin/env-injector
         - --dummy-run
       containers:
-        - name: node-driver-registrar
-          image: {{ include "helm_lib_module_image" (list . "csiNodeDriverRegistrar") }}
+        - name: csi-node-driver-registrar
+          image: {{ include "helm_lib_module_common_image" (list . (list "csiNodeDriverRegistrar" $kubeVersion.Major $kubeVersion.Minor | join "" )) }}
           imagePullPolicy: IfNotPresent
           {{- include "helm_lib_module_container_security_context_not_allow_privilege_escalation" . | nindent 10 }}
           args:
@@ -148,8 +151,8 @@ spec:
             {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
               {{- include "secrets_store_resources" . | nindent 14 }}
             {{- end }}
-        - name: liveness-probe
-          image: {{ include "helm_lib_module_image" (list . "livenessprobe") }}
+        - name: csi-livenessprobe
+          image: {{ include "helm_lib_module_common_image" (list . (list "csiLivenessprobe" $kubeVersion.Major $kubeVersion.Minor | join "" )) }}
           imagePullPolicy: IfNotPresent
           {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
           args:
@@ -164,7 +167,7 @@ spec:
             requests:
               {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
             {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
-              {{- include "liveness_probe_resources" . | nindent 14 }}
+              {{- include "csi_livenessprobe_resources" . | nindent 14 }}
             {{- end }}
         - name: kube-rbac-proxy
           {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
