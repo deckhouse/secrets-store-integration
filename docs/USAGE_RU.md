@@ -43,11 +43,12 @@ spec:
      authPath: "main-kube"
      caCert: |
        -----BEGIN CERTIFICATE-----
-       MIIFoTCCA4mgAwIBAgIUX9kFz7OxlBlALMEj8WsegZloXTowDQYJKoZIhvcNAQEL
+       kD8MMYv5NHHko/3jlBJCjVG6cI+5HaVekOqRN9l3D9ZXsdg2RdXLU8CecQAD7yYa
        ................................................................
-       WoR9b11eYfyrnKCYoSqBoi2dwkCkV1a0GN9vStwiBnKnAmV3B8B5yMnSjmp+42gt
-       o2SYzqM=
+       C2ZTJJonuI8dA4qUadvCXrsQqJEa2nw1rql4LfPP5ztJz1SwNCSYH7EmwqW+Q7WR
+       bZ6GhOj=
        -----END CERTIFICATE-----
+    connectionConfiguration: Manual
 ```
 
 **Крайне рекомендуется задавать переменную `caCert`. Если она не задана, будет использовано содержимое системного ca-certificates.**
@@ -65,8 +66,8 @@ export VAULT_ADDR=https://secretstoreexample.com
 ```
 {{< /alert >}}
 
-> В этом руководстве мы приводим два вида примерных команд: 
->   * команда с использованием консольной версии Stronghold ([Как получить бинарный файл stronghold](#как-получить-бинарный-файл-stronghold));
+> В этом руководстве мы приводим два вида команд: 
+>   * команда с использованием консольной версии Stronghold ([Скачать мультитул d8](#скачать-мультитул-d8-для-команд-stronghold));
 >   * команда с использованием curl для выполнения прямых запросов в API secrets store.
 
 Для использования инструкций по инжектированию секретов из примеров ниже вам понадобится:
@@ -83,7 +84,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Включим и создадим Key-Value хранилище:
 
   ```bash
-  stronghold secrets enable -path=demo-kv -version=2 kv
+  d8 stronghold secrets enable -path=demo-kv -version=2 kv
   ```
   Команда с использованием curl:
 
@@ -98,7 +99,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Зададим имя пользователя и пароль базы данных в качестве значения секрета:
 
   ```bash
-  stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
+  d8 stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
   ```
   Команда с использованием curl:
 
@@ -113,7 +114,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Проверим, правильно ли записались секреты:
 
   ```bash
-  stronghold kv get demo-kv/myapp-secret
+  d8 stronghold kv get demo-kv/myapp-secret
   ```  
   
   Команда с использованием curl:
@@ -126,7 +127,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * По умолчанию метод аутентификации в Stronghold через Kubernetes API кластера, на котором запущен сам Stronghold, – включён и настроен под именем `kubernetes_local`. Если требуется настроить доступ через удалённые кластера, задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Stronghold с помощью Kubernetes API для каждого кластера:
 
   ```bash
-  stronghold auth enable -path=remote-kube-1 kubernetes
+  d8 stronghold auth enable -path=remote-kube-1 kubernetes
   ```
   Команда с использованием curl:
   ```bash
@@ -140,22 +141,23 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Задаём адрес Kubernetes API для каждого кластера:
 
   ```bash
-  stronghold write auth/remote-kube-1/config \
+  d8 stronghold write auth/remote-kube-1/config \
     kubernetes_host="https://api.kube.my-deckhouse.com"
+    disable_local_ca_jwt=true
   ```
   Команда с использованием curl:
   ```bash
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com"}' \
+    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com","disable_local_ca_jwt":true}' \
     ${VAULT_ADDR}/v1/auth/remote-kube-1/config
   ```
 
 * Создаём в Stronghold политику с названием `myapp-ro-policy`, разрешающую чтение секрета `myapp-secret`:
 
   ```bash
-  stronghold policy write myapp-ro-policy - <<EOF
+  d8 stronghold policy write myapp-ro-policy - <<EOF
   path "demo-kv/data/myapp-secret" {
     capabilities = ["read"]
   }
@@ -180,7 +182,7 @@ export VAULT_ADDR=https://secretstoreexample.com
   {{< /alert >}}
 
   ```bash
-  stronghold write auth/kubernetes_local/role/myapp-role \
+  d8 stronghold write auth/kubernetes_local/role/myapp-role \
       bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
@@ -199,7 +201,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Повторяем то же самое для остальных кластеров, указав другой путь аутентификации:
 
   ```bash
-  stronghold write auth/remote-kube-1/role/myapp-role \
+  d8 stronghold write auth/remote-kube-1/role/myapp-role \
       bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
@@ -506,12 +508,29 @@ for {
        secretsStoreImport: "python-backend"
 ```
 
-## Как получить бинарный файл stronghold
+## Скачать мультитул d8 для команд stronghold
 
-На мастер-ноде кластера необходимо выполнить следующие команды через `root` пользователя:
-```bash
-mkdir $HOME/bin
-sudo cp /proc/$(pidof stronghold)/root/usr/bin/stronghold bin && sudo chmod a+x bin/stronghold
-export PATH=$PATH:$HOME/bin
-```
-Команда `stronhold` готова к использованию.
+### Через официальный сайт
+[](https://deckhouse.ru/products/kubernetes-platform/documentation/v1/deckhouse-cli/#как-установить-deckhouse-cli)
+
+
+### Через DKP
+Для скачивания мультитула:
+1. Перейдите на страницу в поддомене `tools.` вашей Декхаус платформы (Пример `https://tools.mydkplatform.ru`)
+2. Выберите Deckhouse CLI для вашей операционной системы.
+3. Для Linux и MacOS
+   1. Добавтие права на выполнение `d8` через `chmod +x d8`  
+   2. Переместите исполняемый файл в папку `/usr/local/bin/`
+
+   Для Windows
+    1. Распакуйте архив, переместите файл d8.exe в выбранный вами каталог и добавьте каталог в переменную PATH операционной системы.
+    2. Разблокируйте файл d8.exe, например, следующим способом:
+       1. Щелкните правой кнопкой мыши на файле и выберите Свойства в контекстном меню.
+       2. В окне Свойства убедитесь, что находитесь на вкладке Общие.
+       3. Внизу вкладки Общие вы можете увидеть раздел Безопасность с сообщением о блокировке файла.
+       4. Установите флажок Разблокировать или нажмите кнопку Разблокировать, затем нажмите Применить и ОК, чтобы сохранить изменения
+4. Проверьте, что утилита работает:
+    ```
+    d8 help
+    ```
+Команда `d8 stronhold` готова к использованию.
