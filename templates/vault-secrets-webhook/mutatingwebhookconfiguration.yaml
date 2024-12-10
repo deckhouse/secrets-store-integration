@@ -22,7 +22,7 @@ webhooks:
     - "*"
     resources:
     - pods
-  failurePolicy: Ignore
+  failurePolicy: Fail
   namespaceSelector:
     matchExpressions:
     - key: kubernetes.io/metadata.name
