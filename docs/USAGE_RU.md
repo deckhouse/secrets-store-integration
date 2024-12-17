@@ -5,7 +5,7 @@ description: Использование модуля secrets-store-integration.
 
 ## Настройка модуля для работы c Deckhouse Stronghold
 
-Для автоматической настройки работы модуля secrets-store-integration в связке с модулем [Deckhouse Stronghold](../../stronghold/) потребуется ранее [включенный](../../stronghold/stable/usage.html#%D0%BA%D0%B0%D0%BA-%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C) и настроенный Stronghold.
+Для автоматической настройки работы модуля secrets-store-integration в связке с модулем [Deckhouse Stronghold](../../stronghold/stable/) потребуется ранее [включенный](../../stronghold/stable/usage.html#%D0%BA%D0%B0%D0%BA-%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C) и настроенный Stronghold.
 
 Далее достаточно применить следующий ресурс:
 
@@ -43,12 +43,11 @@ spec:
      authPath: "main-kube"
      caCert: |
        -----BEGIN CERTIFICATE-----
-       kD8MMYv5NHHko/3jlBJCjVG6cI+5HaVekOqRN9l3D9ZXsdg2RdXLU8CecQAD7yYa
+       MIIFoTCCA4mgAwIBAgIUX9kFz7OxlBlALMEj8WsegZloXTowDQYJKoZIhvcNAQEL
        ................................................................
-       C2ZTJJonuI8dA4qUadvCXrsQqJEa2nw1rql4LfPP5ztJz1SwNCSYH7EmwqW+Q7WR
-       bZ6GhOj=
+       WoR9b11eYfyrnKCYoSqBoi2dwkCkV1a0GN9vStwiBnKnAmV3B8B5yMnSjmp+42gt
+       o2SYzqM=
        -----END CERTIFICATE-----
-    connectionConfiguration: Manual
 ```
 
 **Крайне рекомендуется задавать переменную `caCert`. Если она не задана, будет использовано содержимое системного ca-certificates.**
@@ -66,8 +65,8 @@ export VAULT_ADDR=https://secretstoreexample.com
 ```
 {{< /alert >}}
 
-> В этом руководстве мы приводим два вида команд: 
->   * команда с использованием консольной версии Stronghold ([Скачать мультитул d8](#скачать-мультитул-d8-для-команд-stronghold));
+> В этом руководстве мы приводим два вида примерных команд:
+>   * команда с использованием консольной версии Stronghold ([Как получить бинарный файл stronghold](#как-получить-бинарный-файл-stronghold));
 >   * команда с использованием curl для выполнения прямых запросов в API secrets store.
 
 Для использования инструкций по инжектированию секретов из примеров ниже вам понадобится:
@@ -84,7 +83,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Включим и создадим Key-Value хранилище:
 
   ```bash
-  d8 stronghold secrets enable -path=demo-kv -version=2 kv
+  stronghold secrets enable -path=demo-kv -version=2 kv
   ```
   Команда с использованием curl:
 
@@ -99,7 +98,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Зададим имя пользователя и пароль базы данных в качестве значения секрета:
 
   ```bash
-  d8 stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
+  stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
   ```
   Команда с использованием curl:
 
@@ -114,9 +113,9 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Проверим, правильно ли записались секреты:
 
   ```bash
-  d8 stronghold kv get demo-kv/myapp-secret
+  stronghold kv get demo-kv/myapp-secret
   ```  
-  
+
   Команда с использованием curl:
   ```bash
   curl \
@@ -127,7 +126,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * По умолчанию метод аутентификации в Stronghold через Kubernetes API кластера, на котором запущен сам Stronghold, – включён и настроен под именем `kubernetes_local`. Если требуется настроить доступ через удалённые кластера, задаём путь аутентификации (`authPath`) и включаем аутентификацию и авторизацию в Stronghold с помощью Kubernetes API для каждого кластера:
 
   ```bash
-  d8 stronghold auth enable -path=remote-kube-1 kubernetes
+  stronghold auth enable -path=remote-kube-1 kubernetes
   ```
   Команда с использованием curl:
   ```bash
@@ -141,23 +140,22 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Задаём адрес Kubernetes API для каждого кластера:
 
   ```bash
-  d8 stronghold write auth/remote-kube-1/config \
+  stronghold write auth/remote-kube-1/config \
     kubernetes_host="https://api.kube.my-deckhouse.com"
-    disable_local_ca_jwt=true
   ```
   Команда с использованием curl:
   ```bash
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com","disable_local_ca_jwt":true}' \
+    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com"}' \
     ${VAULT_ADDR}/v1/auth/remote-kube-1/config
   ```
 
 * Создаём в Stronghold политику с названием `myapp-ro-policy`, разрешающую чтение секрета `myapp-secret`:
 
   ```bash
-  d8 stronghold policy write myapp-ro-policy - <<EOF
+  stronghold policy write myapp-ro-policy - <<EOF
   path "demo-kv/data/myapp-secret" {
     capabilities = ["read"]
   }
@@ -182,7 +180,7 @@ export VAULT_ADDR=https://secretstoreexample.com
   {{< /alert >}}
 
   ```bash
-  d8 stronghold write auth/kubernetes_local/role/myapp-role \
+  stronghold write auth/kubernetes_local/role/myapp-role \
       bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
@@ -201,7 +199,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Повторяем то же самое для остальных кластеров, указав другой путь аутентификации:
 
   ```bash
-  d8 stronghold write auth/remote-kube-1/role/myapp-role \
+  stronghold write auth/remote-kube-1/role/myapp-role \
       bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
@@ -217,10 +215,10 @@ export VAULT_ADDR=https://secretstoreexample.com
   ```
 
 
-  {{< alert level="info">}}
-  **Важно!**  
-  Рекомендованное значение TTL для токена Kubernetes составляет 10m.
-  {{< /alert >}}
+{{< alert level="info">}}
+**Важно!**  
+Рекомендованное значение TTL для токена Kubernetes составляет 10m.
+{{< /alert >}}
 
 Эти настройки позволяют любому поду из пространства имён `myapp-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp-sa`, аутентифицироваться и авторизоваться в Stronghold для чтения секретов согласно политике `myapp-ro-policy`.
 
@@ -232,10 +230,10 @@ export VAULT_ADDR=https://secretstoreexample.com
 
 ## Как разрешить ServiceAccount авторизоваться в Stronghold?
 
-Для авторизации в Stronghold, Pod использует токен, сгенерированный для своего ServiceAccount. Для того чтобы Stronghold мог проверить валидность предоставляемых данных ServiceAccount используемый сервисом, Stronghold должен иметь разрешение на действия `get`, `list` и `watch`  для endpoints `tokenreviews.authentication.k8s.io` и `subjectaccessreviews.authorization.k8s.io`. Для этого также можно использовать clusterRole `system:auth-delegator`. 
+Для авторизации в Stronghold, Pod использует токен, сгенерированный для своего ServiceAccount. Для того чтобы Stronghold мог проверить валидность предоставляемых данных ServiceAccount используемый сервисом, Stronghold должен иметь разрешение на действия `get`, `list` и `watch`  для endpoints `tokenreviews.authentication.k8s.io` и `subjectaccessreviews.authorization.k8s.io`. Для этого также можно использовать clusterRole `system:auth-delegator`.
 
 Stronghold может использовать различные авторизационные данные для осуществления запросов в API Kubernetes:
-1. Использовать токен приложения, которое пытается авторизоваться в Stronghold. В этом случае для каждого сервиса авторизующейся в Stronghold требуется в используемом ServiceAccount иметь clusterRole `system:auth-delegator` (либо права на API представленные выше). 
+1. Использовать токен приложения, которое пытается авторизоваться в Stronghold. В этом случае для каждого сервиса авторизующейся в Stronghold требуется в используемом ServiceAccount иметь clusterRole `system:auth-delegator` (либо права на API представленные выше).
 2. Использовать статичный токен отдельно созданного специально для Stronghold `ServiceAccount` у которого имеются необходимые права. Настройка Stronghold для такого случая подробно описана в [документации Vault](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
 
 ## Инжектирование переменных окружения
@@ -506,6 +504,7 @@ for {
      driver: secrets-store.csi.deckhouse.io
      volumeAttributes:
        secretsStoreImport: "python-backend"
+```
 ```
 
 ## Скачать мультитул d8 для команд stronghold
