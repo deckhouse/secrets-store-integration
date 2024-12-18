@@ -27,6 +27,15 @@ on:
       ce:
         type: boolean
         description: CE
+      be:
+        type: boolean
+        description: BE
+      se:
+        type: boolean
+        description: SE
+      se-plus:
+        type: boolean
+        description: SE+
       ee:
         type: boolean
         description: EE
@@ -110,6 +119,66 @@ jobs:
       - name: ECHO VAR
         run: |
            echo $MODULES_MODULE_SOURCE
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/setup@v1
+      - uses: deckhouse/modules-actions/deploy@v1
+
+  job-BE:
+    name: Edition BE
+    runs-on: ubuntu-latest
+    if: github.event.inputs.be == 'true'
+    steps:
+      - run: echo "BE"
+      - name: Validation for tag
+        run: |
+          echo ${{ github.event.inputs.tag }} | grep -P '^v\d+\.\d+\.\d+$'
+        shell: bash
+      - name: SET VAR
+        run: |
+            echo "MODULES_MODULE_SOURCE=$MODULES_REGISTRY/$MODULE_SOURCE_NAME/be/modules" >> "$GITHUB_ENV"
+      - name: ECHO VAR
+        run: |
+            echo $MODULES_MODULE_SOURCE
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/setup@v1
+      - uses: deckhouse/modules-actions/deploy@v1
+
+  job-SE:
+    name: Edition SE
+    runs-on: ubuntu-latest
+    if: github.event.inputs.se == 'true'
+    steps:
+      - run: echo "SE"
+      - name: Validation for tag
+        run: |
+          echo ${{ github.event.inputs.tag }} | grep -P '^v\d+\.\d+\.\d+$'
+        shell: bash
+      - name: SET VAR
+        run: |
+            echo "MODULES_MODULE_SOURCE=$MODULES_REGISTRY/$MODULE_SOURCE_NAME/se/modules" >> "$GITHUB_ENV"
+      - name: ECHO VAR
+        run: |
+            echo $MODULES_MODULE_SOURCE
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/setup@v1
+      - uses: deckhouse/modules-actions/deploy@v1
+
+  job-SE-plus:
+    name: Edition SE+
+    runs-on: ubuntu-latest
+    if: github.event.inputs.se-plus == 'true'
+    steps:
+      - run: echo "SE+"
+      - name: Validation for tag
+        run: |
+          echo ${{ github.event.inputs.tag }} | grep -P '^v\d+\.\d+\.\d+$'
+        shell: bash
+      - name: SET VAR
+        run: |
+            echo "MODULES_MODULE_SOURCE=$MODULES_REGISTRY/$MODULE_SOURCE_NAME/se-plus/modules" >> "$GITHUB_ENV"
+      - name: ECHO VAR
+        run: |
+            echo $MODULES_MODULE_SOURCE
       - uses: actions/checkout@v4
       - uses: deckhouse/modules-actions/setup@v1
       - uses: deckhouse/modules-actions/deploy@v1
