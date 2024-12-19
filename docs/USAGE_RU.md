@@ -509,19 +509,20 @@ for {
 
 ## Скачать мультитул d8 для команд stronghold
 
-### Через официальный сайт
-[](https://deckhouse.ru/products/kubernetes-platform/documentation/v1/deckhouse-cli/#как-установить-deckhouse-cli)
+### Официальный сайт Deckhouse Kubernetes Platform
 
+Перейдите на официальный сайт и воспользуйтесь [инструкцией](https://deckhouse.ru/products/kubernetes-platform/documentation/v1/deckhouse-cli/#как-установить-deckhouse-cli)
 
-### Через DKP
+### Субдомен вашей Deckhouse Kubernetes Platform
+
 Для скачивания мультитула:
-1. Перейдите на страницу в поддомене `tools.` вашей Декхаус платформы (Пример `https://tools.mydkplatform.ru`)
-2. Выберите Deckhouse CLI для вашей операционной системы.
-3. Для Linux и MacOS
-   1. Добавтие права на выполнение `d8` через `chmod +x d8`  
-   2. Переместите исполняемый файл в папку `/usr/local/bin/`
+1. Перейдите на страницу `tools..<cluster_domain>`, где `<cluster_domain>` — DNS-имя в соответствии с шаблоном из параметра [modules.publicDomainTemplate](deckhouse-configure-global.html#parameters-modules-publicdomaintemplate) глобальной конфигурации.
+1. Выберите Deckhouse CLI для вашей операционной системы.
+1. **Для Linux и MacOS:**
+   - Добавьте права на выполнение `d8` через `chmod +x d8`.
+   - Переместите исполняемый файл в папку `/usr/local/bin/`.
 
-   Для Windows
+   **Для Windows:**
     - Распакуйте архив, переместите файл `d8.exe` в выбранный вами каталог и добавьте каталог в переменную PATH операционной системы.
     - Разблокируйте файл `d8.exe`, например, следующим способом:
        - Щелкните правой кнопкой мыши на файле и выберите *Свойства* в контекстном меню.
