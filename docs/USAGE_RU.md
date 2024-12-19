@@ -5,7 +5,7 @@ description: Использование модуля secrets-store-integration.
 
 ## Настройка модуля для работы c Deckhouse Stronghold
 
-Для автоматической настройки работы модуля secrets-store-integration в связке с модулем [Deckhouse Stronghold](../../stronghold/) потребуется ранее [включенный](../../stronghold/stable/usage.html#%D0%BA%D0%B0%D0%BA-%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C) и настроенный Stronghold.
+Для автоматической настройки работы модуля secrets-store-integration в связке с модулем [Deckhouse Stronghold](../../stronghold/stable/) потребуется ранее [включенный](../../stronghold/stable/usage.html#%D0%BA%D0%B0%D0%BA-%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C) и настроенный Stronghold.
 
 Далее достаточно применить следующий ресурс:
 
@@ -65,7 +65,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 ```
 {{< /alert >}}
 
-> В этом руководстве мы приводим два вида примерных команд: 
+> В этом руководстве мы приводим два вида примерных команд:
 >   * команда с использованием консольной версии Stronghold ([Как получить бинарный файл stronghold](#как-получить-бинарный-файл-stronghold));
 >   * команда с использованием curl для выполнения прямых запросов в API secrets store.
 
@@ -115,7 +115,7 @@ export VAULT_ADDR=https://secretstoreexample.com
   ```bash
   stronghold kv get demo-kv/myapp-secret
   ```  
-  
+
   Команда с использованием curl:
   ```bash
   curl \
@@ -215,10 +215,10 @@ export VAULT_ADDR=https://secretstoreexample.com
   ```
 
 
-  {{< alert level="info">}}
-  **Важно!**  
-  Рекомендованное значение TTL для токена Kubernetes составляет 10m.
-  {{< /alert >}}
+{{< alert level="info">}}
+**Важно!**  
+Рекомендованное значение TTL для токена Kubernetes составляет 10m.
+{{< /alert >}}
 
 Эти настройки позволяют любому поду из пространства имён `myapp-namespace` из обоих K8s-кластеров, который использует ServiceAccount `myapp-sa`, аутентифицироваться и авторизоваться в Stronghold для чтения секретов согласно политике `myapp-ro-policy`.
 
@@ -230,10 +230,10 @@ export VAULT_ADDR=https://secretstoreexample.com
 
 ## Как разрешить ServiceAccount авторизоваться в Stronghold?
 
-Для авторизации в Stronghold, Pod использует токен, сгенерированный для своего ServiceAccount. Для того чтобы Stronghold мог проверить валидность предоставляемых данных ServiceAccount используемый сервисом, Stronghold должен иметь разрешение на действия `get`, `list` и `watch`  для endpoints `tokenreviews.authentication.k8s.io` и `subjectaccessreviews.authorization.k8s.io`. Для этого также можно использовать clusterRole `system:auth-delegator`. 
+Для авторизации в Stronghold Pod использует токен, сгенерированный для своего ServiceAccount'а. Для того чтобы Stronghold мог проверить валидность предоставляемых данных `ServiceAccount`, используемый сервисом Stronghold должен иметь разрешение на действия `get`, `list` и `watch`  для endpoints `tokenreviews.authentication.k8s.io` и `subjectaccessreviews.authorization.k8s.io`. Для этого также можно использовать clusterRole `system:auth-delegator`.
 
 Stronghold может использовать различные авторизационные данные для осуществления запросов в API Kubernetes:
-1. Использовать токен приложения, которое пытается авторизоваться в Stronghold. В этом случае для каждого сервиса авторизующейся в Stronghold требуется в используемом ServiceAccount иметь clusterRole `system:auth-delegator` (либо права на API представленные выше). 
+1. Использовать токен приложения, которое пытается авторизоваться в Stronghold. В этом случае для каждого сервиса, авторизующегося в Stronghold, требуется в используемом ServiceAccount'е иметь clusterRole `system:auth-delegator` (либо права на API представленные выше).
 2. Использовать статичный токен отдельно созданного специально для Stronghold `ServiceAccount` у которого имеются необходимые права. Настройка Stronghold для такого случая подробно описана в [документации Vault](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
 
 ## Инжектирование переменных окружения
@@ -506,12 +506,30 @@ for {
        secretsStoreImport: "python-backend"
 ```
 
-## Как получить бинарный файл stronghold
+## Скачать мультитул d8 для команд Stronghold
 
-На мастер-ноде кластера необходимо выполнить следующие команды через `root` пользователя:
-```bash
-mkdir $HOME/bin
-sudo cp /proc/$(pidof stronghold)/root/usr/bin/stronghold bin && sudo chmod a+x bin/stronghold
-export PATH=$PATH:$HOME/bin
-```
-Команда `stronhold` готова к использованию.
+### Официальный сайт Deckhouse Kubernetes Platform
+
+Перейдите на официальный сайт и воспользуйтесь [инструкцией](https://deckhouse.ru/products/kubernetes-platform/documentation/v1/deckhouse-cli/#как-установить-deckhouse-cli)
+
+### Субдомен вашей Deckhouse Kubernetes Platform
+
+Для скачивания мультитула:
+1. Перейдите на страницу `tools..<cluster_domain>`, где `<cluster_domain>` — DNS-имя в соответствии с шаблоном из параметра [modules.publicDomainTemplate](deckhouse-configure-global.html#parameters-modules-publicdomaintemplate) глобальной конфигурации.
+1. Выберите Deckhouse CLI для вашей операционной системы.
+1. **Для Linux и MacOS:**
+   - Добавьте права на выполнение `d8` через `chmod +x d8`.
+   - Переместите исполняемый файл в каталог `/usr/local/bin/`.
+
+   **Для Windows:**
+    - Распакуйте архив, переместите файл `d8.exe` в выбранный вами каталог и добавьте этот каталог в переменную $PATH операционной системы.
+    - Разблокируйте файл `d8.exe`, например, следующим способом:
+       - Щелкните правой кнопкой мыши на файле и выберите *Свойства* в контекстном меню.
+       - В окне *Свойства* убедитесь, что находитесь на вкладке *Общие*.
+       - Внизу вкладки *Общие* вы можете увидеть раздел *Безопасность* с сообщением о блокировке файла.
+       - Установите флажок *Разблокировать* или нажмите кнопку *Разблокировать*, затем нажмите *Применить* и *ОК*, чтобы сохранить изменения.
+4. Проверьте, что утилита работает:
+    ```
+    d8 help
+    ```
+Готово, вы установили `d8 stronghold`.

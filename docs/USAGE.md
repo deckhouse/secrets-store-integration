@@ -5,7 +5,7 @@ description: Usage of the secrets-store-integration Deckhouse module.
 
 ## Configuring the module to work with Deckhouse Stronghold
 
-[Enable](../../stronghold/stable/usage.html#how-to-enable-the-module) the Stronghold module beforehand to automatically configure the secrets-store-integration module to work with [Deckhouse Stronghold](../../stronghold/).
+[Enable](../../stronghold/stable/usage.html#how-to-enable-the-module) the Stronghold module beforehand to automatically configure the secrets-store-integration module to work with [Deckhouse Stronghold](../../stronghold/stable/).
 
 Next, apply the `ModuleConfig`:
 
@@ -43,11 +43,12 @@ spec:
       authPath: "main-kube"
       caCert: |
         -----BEGIN CERTIFICATE-----
-        MIIFoTCCA4mgAwIBAgIUX9kFz7OxlBlALMEj8WsegZloXTowDQYJKoZIhvcNAQEL
+        kD8MMYv5NHHko/3jlBJCjVG6cI+5HaVekOqRN9l3D9ZXsdg2RdXLU8CecQAD7yYa
         ................................................................
-        WoR9b11eYfyrnKCYoSqBoi2dwkCkV1a0GN9vStwiBnKnAmV3B8B5yMnSjmp+42gt
-        o2SYzqM=
+        C2ZTJJonuI8dA4qUadvCXrsQqJEa2nw1rql4LfPP5ztJz1SwNCSYH7EmwqW+Q7WR
+        bZ6GhOj=
         -----END CERTIFICATE-----
+    connectionConfiguration: Manual
 ```
 
 **It is strongly recommended to set the `caCert` variable. Otherwise, the module will use system ca-certificates.**
@@ -66,7 +67,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 {{< /alert >}}
 
 > This guide will cover two ways to do this:
->   * using the console version of Stronghold ([Get stronghold cli](#get-stronghold-cli));
+>   * using the console version of Stronghold ([Download the d8 multitool](#download--the-d8-multitool-for-stronghold-commands));
 >   * using curl to make direct requests to the secrets store API.
 
 Before proceeding with the secret injection instructions in the examples below, do the following:
@@ -83,7 +84,7 @@ Example commands to set up the environment:
 * Enable and create the Key-Value store:
 
   ```bash
-  stronghold secrets enable -path=demo-kv -version=2 kv
+  d8 stronghold secrets enable -path=demo-kv -version=2 kv
   ```
   The same command as a curl HTTP request:
 
@@ -98,7 +99,7 @@ Example commands to set up the environment:
 * Set the database username and password as the value of the secret:
 
   ```bash
-  stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
+  d8 stronghold kv put demo-kv/myapp-secret DB_USER="username" DB_PASS="secret-password"
   ```
   The curl equivalent of the above command:
 
@@ -113,9 +114,9 @@ Example commands to set up the environment:
 * Double-check that the password has been saved successfully:
 
   ```bash
-  stronghold kv get demo-kv/myapp-secret
+  d8 stronghold kv get demo-kv/myapp-secret
   ```  
-  
+
   The curl equivalent of the above command:
   ```bash
   curl \
@@ -126,7 +127,7 @@ Example commands to set up the environment:
 * By default, the method of authentication in Stronghold via Kubernetes API of the cluster on which Stronghold itself is running is enabled and configured under the name `kubernetes_local`. If you want to configure access via remote clusters, set the authentication path (`authPath`) and enable authentication and authorization in Stronghold via Kubernetes API for each cluster:
 
   ```bash
-  stronghold auth enable -path=remote-kube-1 kubernetes
+  d8 stronghold auth enable -path=remote-kube-1 kubernetes
   ```
   The curl equivalent of the above command:
   ```bash
@@ -140,22 +141,23 @@ Example commands to set up the environment:
 * Set the Kubernetes API address for each cluster (in this case, it is the K8s's API server service):
 
   ```bash
-  stronghold write auth/remote-kube-1/config \
+  d8 stronghold write auth/remote-kube-1/config \
     kubernetes_host="https://api.kube.my-deckhouse.com"
+    disable_local_ca_jwt=true
   ```
   The curl equivalent of the above command:
   ```bash
   curl \
     --header "X-Vault-Token: ${VAULT_TOKEN}" \
     --request PUT \
-    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com"}' \
+    --data '{"kubernetes_host":"https://api.kube.my-deckhouse.com","disable_local_ca_jwt":true}' \
     ${VAULT_ADDR}/v1/auth/remote-kube-1/config
   ```
 
 * Create a policy in Stronghold called `myapp-ro-policy` that allows reading of the `myapp-secret` secret:
 
   ```bash
-  stronghold policy write myapp-ro-policy - <<EOF
+  d8 stronghold policy write myapp-ro-policy - <<EOF
   path "demo-kv/data/myapp-secret" {
     capabilities = ["read"]
   }
@@ -180,7 +182,7 @@ Example commands to set up the environment:
   {{< /alert >}}
 
   ```bash
-  stronghold write auth/kubernetes_local/role/myapp-role \
+  d8 stronghold write auth/kubernetes_local/role/myapp-role \
       bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
@@ -199,7 +201,7 @@ Example commands to set up the environment:
 * Repeat the same for the rest of the clusters, specifying a different authentication path:
 
   ```bash
-  stronghold write auth/remote-kube-1/role/myapp-role \
+  d8 stronghold write auth/remote-kube-1/role/myapp-role \
       bound_service_account_names=myapp-sa \
       bound_service_account_namespaces=myapp-namespace \
       policies=myapp-ro-policy \
@@ -215,10 +217,10 @@ Example commands to set up the environment:
   ```
 
 
-  {{< alert level="info">}}
-  **Important!**  
-  The recommended TTL value of the Kubernetes token is 10m.
-  {{< /alert >}}
+{{< alert level="info">}}
+**Important!**  
+The recommended TTL value of the Kubernetes token is 10m.
+{{< /alert >}}
 
 These settings allow any pod within the `myapp-namespace` namespace in both K8s clusters that uses the `myapp-sa` ServiceAccount to authenticate, authorize, and read secrets in the Stronghold according to the `myapp-ro-policy` policy.
 
@@ -510,12 +512,31 @@ A container that uses the `subPath` volume mount will not get secret updates whe
        secretsStoreImport: "python-backend"
 ```
 
-## Get stronghold cli
+## Download the d8 multitool for stronghold commands
 
-On the cluster's master node, run the following commands as `root`:
-```bash
-mkdir $HOME/bin
-sudo cp /proc/$(pidof stronghold)/root/usr/bin/stronghold bin && sudo chmod a+x bin/stronghold
-export PATH=$PATH:$HOME/bin
-```
-As a result, the command `stronhold` is ready to be used.
+### Official website of Deckhouse Kubernetes Platform
+
+Go to the official website and follow the [instructions](https://deckhouse.io/products/kubernetes-platform/documentation/v1/deckhouse-cli/#how-do-i-install-deckhouse-cli).
+
+### The subdomain of your Deckhouse Kubernetes Platform
+
+To download the multitool:
+1. Go to the page `tools.<cluster_domain>`, where `<cluster_domain>` is the DNS name that matches the template defined in the [modules.publicDomainTemplate](deckhouse-configure-global.html#parameters-modules-publicdomaintemplate) parameter.
+
+2. Select *Deckhouse CLI* for your operating system.
+1. **For Linux and MacOS:**
+  - Add execution rights to `d8` via `chmod +x d8`.
+  - Move the executable file to the `/usr/local/bin/` folder.
+
+   **For Windows:**
+  - Extract the archive, move the `d8.exe` file to a directory of your choice, and add the directory to PATH variable of the operating system.
+  - Unblock the `d8.exe file`, for example, in the following way:
+    - Right-click on the file and select *Properties* from the context menu.
+    - In the *Properties* window, ensure you are on the *General* tab.
+    - At the bottom of the *General* tab, you may see a *Security* section with a message about the file being blocked.
+    - Check the *Unblock* box or click the *Unblock* button, then click *Apply* and *OK* to save the changes.
+1. Check that the utility works:
+    ```
+    d8 help
+    ```
+Congrats, you have successfully installed the `d8 stronhold`.
