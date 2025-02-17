@@ -156,6 +156,17 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 			continue
 		}
 
+		if func() bool {
+			for _, skipContainerName := range vaultConfig.SkipMutateContainers {
+				if container.Name == skipContainerName {
+					return true
+				}
+			}
+			return false
+		}() {
+			continue
+		}
+
 		mutated = true
 
 		args := container.Command
