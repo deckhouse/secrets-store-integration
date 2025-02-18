@@ -69,6 +69,8 @@ spec:
           value: "true"
         - name: TELEMETRY_LISTEN_ADDRESS
           value: "127.0.0.1:8000"
+        - name: SKIP_MUTATE_CONTAINERS
+          value: "check-linux-kernel istio-validation istio-proxy istio-init"
         {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "Manual" }}
         - name: ADDR
           value: {{ .Values.secretsStoreIntegration.connection.url }}

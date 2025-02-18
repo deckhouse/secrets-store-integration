@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/slok/kubewebhook/v2/pkg/model"
@@ -66,6 +67,7 @@ type VaultConfig struct {
 	ObjectNamespace               string
 	MutateProbes                  bool
 	Token                         string
+	SkipMutateContainers          []string
 }
 
 func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig {
@@ -142,6 +144,12 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 
 	vaultConfig.EnvLogServer = viper.GetString("VAULT_ENV_LOG_SERVER")
 
+	if val, ok := annotations[common.SkipMutateContainersAnnotation]; ok {
+		vaultConfig.SkipMutateContainers = strings.Fields(val)
+	} else {
+		vaultConfig.SkipMutateContainers = viper.GetStringSlice("skip_mutate_containers")
+	}
+
 	if val, ok := annotations[common.VaultNamespaceAnnotation]; ok {
 		vaultConfig.VaultNamespace = val
 	} else {
@@ -180,6 +188,7 @@ func SetConfigDefaults() {
 	viper.SetDefault("env_injector_pull_policy", string(corev1.PullIfNotPresent))
 	viper.SetDefault("addr", "https://stronghold.d8-stronghold:8200")
 	viper.SetDefault("tls_skip_verify", "false")
+	viper.SetDefault("skip_mutate_containers", "")
 	viper.SetDefault("auth_path", "kubernetes_local")
 	viper.SetDefault("auth_method", "jwt")
 	viper.SetDefault("role", "")

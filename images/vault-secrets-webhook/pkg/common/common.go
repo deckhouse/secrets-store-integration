@@ -37,8 +37,8 @@ const (
 	VaultNamespaceAnnotation                = "secrets-store.deckhouse.io/namespace"
 	ServiceAccountTokenVolumeNameAnnotation = "secrets-store.deckhouse.io/service-account-token-volume-name"
 	LogLevelAnnotation                      = "secrets-store.deckhouse.io/log-level"
-	VaultEnvFromPathAnnotation = "secrets-store.deckhouse.io/env-from-path"
-
+	VaultEnvFromPathAnnotation              = "secrets-store.deckhouse.io/env-from-path"
+	SkipMutateContainersAnnotation          = "secrets-store.deckhouse.io/skip-mutate-containers"
 )
 
 func HasVaultPrefix(value string) bool {

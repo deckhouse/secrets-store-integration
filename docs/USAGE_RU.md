@@ -114,7 +114,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 
   ```bash
   stronghold kv get demo-kv/myapp-secret
-  ```  
+  ```
 
   Команда с использованием curl:
   ```bash
@@ -174,8 +174,8 @@ export VAULT_ADDR=https://secretstoreexample.com
 * Создаём роль, состоящую из названия пространства имён и политики. Связываем её с ServiceAccount `myapp-sa` из пространства имён `myapp-namespace` и политикой `myapp-ro-policy`:
 
   {{< alert level="danger">}}
-  **Важно!**  
-  Помимо настроек со стороны Stronghold, вы должны настроить разрешения авторизации используемых `serviceAccount` в кластере kubernetes.  
+  **Важно!**
+  Помимо настроек со стороны Stronghold, вы должны настроить разрешения авторизации используемых `serviceAccount` в кластере kubernetes.
   Подробности в пункте [ниже](#как-разрешить-serviceaccount-авторизоваться-в-stronghold)
   {{< /alert >}}
 
@@ -216,7 +216,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 
 
 {{< alert level="info">}}
-**Важно!**  
+**Важно!**
 Рекомендованное значение TTL для токена Kubernetes составляет 10m.
 {{< /alert >}}
 
@@ -255,6 +255,7 @@ Stronghold может использовать различные авториз
 |secrets-store.deckhouse.io/mutate-probes          | false     | Инжектирует переменные окружения в пробы |
 |secrets-store.deckhouse.io/log-level              | info      | Уровень логирования |
 |secrets-store.deckhouse.io/enable-json-log        | false     | Формат логов, строка или json |
+|secrets-store.deckhouse.io/skip-mutate-containers |           | Список имен контейнеров через пробел, к которым не будет применятся инжектирование |
 
 Используя инжектор вы сможете задавать в манифестах пода вместо значений env-шаблоны, которые будут заменяться на этапе запуска контейнера на значения из хранилища.
 
