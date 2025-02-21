@@ -1,5 +1,5 @@
 name: secrets-store-integration
-version: 1.0.25
+version: 1.0.27
 dependencies:
   - name: deckhouse_lib_helm
     version: 1.44.1

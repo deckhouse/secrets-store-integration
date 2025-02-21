@@ -2,13 +2,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: vault-secrets-webhook
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook" )) | nindent 2 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: vault-secrets-webhook-cluster-role
+  name: d8:secrets-store-integration:vault-secrets-webhook
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook" )) | nindent 2 }}
 rules:
 - apiGroups:
@@ -34,21 +34,21 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: vault-secrets-webhook-cluster-role-binding
+  name: d8:secrets-store-integration:vault-secrets-webhook
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook" )) | nindent 2 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: vault-secrets-webhook-cluster-role
+  name: d8:secrets-store-integration:vault-secrets-webhook
 subjects:
   - kind: ServiceAccount
     name: vault-secrets-webhook
-    namespace: {{ include "ssi.namespace" . }}
+    namespace: d8-{{ $.Chart.Name }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: vault-secrets-webhook:rbac-proxy
+  name: d8:secrets-store-integration:vault-secrets-webhook:rbac-proxy
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook")) | nindent 2 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -57,4 +57,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: vault-secrets-webhook
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}

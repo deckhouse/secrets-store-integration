@@ -10,7 +10,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: vault-csi-provider-certificates
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider" )) | nindent 2 }}
 data:
 {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "DiscoverLocalStronghold" }}
@@ -29,7 +29,7 @@ apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
   name: vault-csi-provider
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider")) | nindent 2 }}
 spec:
   resourcePolicy:
@@ -51,7 +51,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: vault-csi-provider
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider" )) | nindent 2 }}
 spec:
   updateStrategy:
@@ -72,16 +72,17 @@ spec:
       {{- include "ssi.imagePullSecrets" . | nindent 6 }}
       {{- include "helm_lib_tolerations" (tuple . "any-node") | nindent 6 }}
       {{- include "helm_lib_priority_class" (tuple . "cluster-medium") | nindent 6 }}
+      {{- include "helm_lib_module_pod_security_context_run_as_user_root" . | nindent 6 }}
       containers:
         - name: vault-csi-provider
           image: {{ include "helm_lib_module_image" (list . "vaultCsiProvider") }}
           imagePullPolicy: IfNotPresent
+          {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
           env:
           {{- if $useCustomCert }}
           - name: VAULT_CACERT
             value: "/certificates/ca.pem"
           {{- end }}
-          {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
           args:
             {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "Manual" }}
             - -vault-addr={{ .Values.secretsStoreIntegration.connection.url }}

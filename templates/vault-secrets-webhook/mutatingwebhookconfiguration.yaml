@@ -2,14 +2,14 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: d8-secrets-store-integration-mutating-webhook-configuration
+  name: d8-{{ $.Chart.Name }}-mutating-webhook-configuration
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook")) | nindent 2 }}
 webhooks:
 - name: pods.vault-secrets-webhook.admission.deckhouse.io
   admissionReviewVersions: ["v1"]
   clientConfig:
     service:
-      namespace: {{ include "ssi.namespace" . }}
+      namespace: d8-{{ $.Chart.Name }}
       name: vault-secrets-webhook
       path: /pods
     caBundle: {{ .Values.secretsStoreIntegration.internal.webhookCert.ca | b64enc | quote }}

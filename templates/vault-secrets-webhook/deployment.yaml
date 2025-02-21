@@ -7,7 +7,7 @@ apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
   name: vault-secrets-webhook
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook")) | nindent 2 }}
 spec:
   resourcePolicy:
@@ -18,10 +18,11 @@ spec:
       maxAllowed:
         cpu: 100m
         memory: 200Mi
+    {{- include "helm_lib_vpa_kube_rbac_proxy_resources" . | nindent 4 }}
   targetRef:
     apiVersion: "apps/v1"
     kind: Deployment
-    name: vault-secrets-webhook
+    name: webhook
   updatePolicy:
     updateMode: "Initial"
 ---
@@ -29,7 +30,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: webhook
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook")) | nindent 2 }}
 spec:
   {{- include "helm_lib_deployment_on_master_strategy_and_replicas_for_ha" . | nindent 2 }}
@@ -79,6 +80,7 @@ spec:
         {{- end }}
         ports:
         - containerPort: 8443
+          name: https
         livenessProbe:
           httpGet:
             scheme: HTTPS
