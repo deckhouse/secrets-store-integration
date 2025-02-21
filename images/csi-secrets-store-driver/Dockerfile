@@ -1,11 +1,12 @@
-ARG BASE_GOLANG_ALPINE=registry.deckhouse.io/base_images/golang:1.22.8-alpine
+ARG BASE_GOLANG_ALPINE=registry.deckhouse.io/base_images/golang:1.23.6-alpine3.20
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
+ARG BASE_ALPINE=registry.deckhouse.io/base_images/alpine:3.20.3
 
-FROM alpine:3.18 as mount
+FROM $BASE_ALPINE as mount
 RUN apk add --no-cache build-base asciidoctor libcap-ng-dev\
-    linux-headers bison automake autoconf libtool ncurses-dev zlib-dev linux-pam-dev python3-dev libeconf-dev utmps-dev utmps-static git
+    linux-headers bison automake autoconf libtool ncurses-dev zlib-dev linux-pam-dev libeconf-dev utmps-dev utmps-static flex git
 RUN cd / && \
-    git clone --depth 1 --branch v2.39.2 https://github.com/util-linux/util-linux.git && \
+    git clone --depth 1 --branch v2.40.4 https://github.com/util-linux/util-linux.git && \
     cd /util-linux && \
     ./autogen.sh && \
     export LDFLAGS="-Wl,-z,now -Wl,-z,relro -static -s" && \
@@ -23,14 +24,14 @@ FROM $BASE_GOLANG_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/kubernetes-sigs/secrets-store-csi-driver.git
 ENV SOURCE_REPO=${SOURCE_REPO}
-ARG SOURCE_TAG=v1.4.6
+ARG SOURCE_TAG=v1.4.8
 ENV SOURCE_TAG=${SOURCE_TAG}
 
 RUN apk add --no-cache git
 RUN cd / && git clone --depth 1 --branch ${SOURCE_TAG} ${SOURCE_REPO}
 WORKDIR /secrets-store-csi-driver
 ADD secrets-store-csi-driver.patch /secrets-store-csi-driver
-RUN git apply -v secrets-store-csi-driver.patch
+RUN git apply -v secrets-store-csi-driver.patch && rm -rf hack/tools
 RUN BUILD_TIMESTAMP=$(date +%Y-%m-%d-%H:%M) && \
     export LDFLAGS="-s -w -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildTime=$(BUILD_TIMESTAMP) -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildVersion=v1.4.0 -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.Vcs=fe" && \
     GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" ./cmd/secrets-store-csi-driver

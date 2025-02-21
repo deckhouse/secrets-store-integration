@@ -1,14 +1,16 @@
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: secrets-store-csi-driver
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ .Chart.Name }}
   {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: secretproviderclasses-role
+  name: d8:secrets-store-integration:secrets-store-csi-driver:secretproviderclasses
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
 rules:
 - apiGroups:
   - ""
@@ -67,20 +69,21 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: secretproviderclasses-rolebinding
+  name: d8:secrets-store-integration:secrets-store-csi-driver:secretproviderclasses
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: secretproviderclasses-role
+  name: d8:secrets-store-integration:secrets-store-csi-driver:secretproviderclasses
 subjects:
 - kind: ServiceAccount
   name: secrets-store-csi-driver
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: secretprovidertokenrequest-role
+  name: d8:secrets-store-integration:secrets-store-csi-driver:token-request
   {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
 rules:
 - apiGroups:
@@ -93,34 +96,36 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: secretprovidertokenrequest-rolebinding
+  name: d8:secrets-store-integration:secrets-store-csi-driver:token-request
   {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: secretprovidertokenrequest-role
+  name: d8:secrets-store-integration:secrets-store-csi-driver:token-request
 subjects:
 - kind: ServiceAccount
   name: secrets-store-csi-driver
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: secretproviderrotation-rolebinding
+  name: d8:secrets-store-integration:secrets-store-csi-driver:rotation
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: secretproviderrotation-role
+  name: d8:secrets-store-integration:secrets-store-csi-driver:rotation
 subjects:
 - kind: ServiceAccount
   name: secrets-store-csi-driver
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: secretproviderrotation-role
+  name: d8:secrets-store-integration:secrets-store-csi-driver:rotation
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
 rules:
 - apiGroups:
   - ""
@@ -132,7 +137,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: secrets-store-csi-driver:rbac-proxy
+  name: d8:secrets-store-integration:secrets-store-csi-driver:rbac-proxy
   {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store")) | nindent 2 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -141,4 +146,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: secrets-store-csi-driver
-  namespace: {{ include "ssi.namespace" . }}
+  namespace: d8-{{ $.Chart.Name }}

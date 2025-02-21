@@ -1,4 +1,4 @@
-ARG BASE_GOLANG_ALPINE=registry.deckhouse.io/base_images/golang:1.22.8-alpine
+ARG BASE_GOLANG_ALPINE=registry.deckhouse.io/base_images/golang:1.23.6-alpine3.20
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
 
 FROM $BASE_GOLANG_ALPINE as artifact

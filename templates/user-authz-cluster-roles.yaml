@@ -4,7 +4,7 @@ kind: ClusterRole
 metadata:
   annotations:
     user-authz.deckhouse.io/access-level: User
-  name: d8:user-authz:secretsstoreintegration:user
+  name: d8:user-authz:secrets-store-integration:user
   {{- include "helm_lib_module_labels" (list .) | nindent 2 }}
 rules:
 - apiGroups:
@@ -21,7 +21,7 @@ kind: ClusterRole
 metadata:
   annotations:
     user-authz.deckhouse.io/access-level: Editor
-  name: d8:user-authz:secretsstoreintegration:editor
+  name: d8:user-authz:secrets-store-integration:editor
   {{- include "helm_lib_module_labels" (list .) | nindent 2 }}
 rules:
 - apiGroups:

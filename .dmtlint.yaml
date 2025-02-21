@@ -1,0 +1,34 @@
+linters-settings:
+  container:
+    exclude-rules:
+      liveness-probe:
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: csi-livenessprobe
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: kube-rbac-proxy
+        - kind: Deployment
+          name: webhook
+          container: kube-rbac-proxy
+      readiness-probe:
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: csi-livenessprobe
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: kube-rbac-proxy
+        - kind: Deployment
+          name: webhook
+          container: kube-rbac-proxy
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: csi-node-driver-registrar
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: secrets-store
+  module:
+    exclude-rules:
+      license:
+        files:
+          - enabled

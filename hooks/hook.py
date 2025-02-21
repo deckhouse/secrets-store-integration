@@ -39,7 +39,7 @@ metadata:
   namespace: default
   labels:
     heritage: deckhouse
-    module: secrets-store-integration  
+    module: secrets-store-integration
 spec:
   provider: vault
   parameters:
