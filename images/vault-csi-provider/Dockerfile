@@ -4,7 +4,7 @@ FROM $BASE_GOLANG_ALPINE as artifact
 
 ARG SOURCE_REPO=https://github.com/hashicorp/vault-csi-provider.git
 ENV SOURCE_REPO=${SOURCE_REPO}
-ARG SOURCE_SHA1=bc1aef95dd32615be40cc30d3771df2582402153
+ARG SOURCE_SHA1=b65ae120bfa37f5383d5f72e68118832b97581d2
 ENV SOURCE_SHA1=${SOURCE_SHA1}
 
 RUN apk add --no-cache make git
