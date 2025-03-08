@@ -24,6 +24,11 @@ jobs:
         run: |
           echo "MODULE_IMAGE_TAG=${{ github.event.inputs.release_branch || 'main' }}" >> $GITHUB_ENV
         if: github.event_name == 'workflow_dispatch'
+      - name: Get crane
+        run: |
+          wget -qO- https://github.com/google/go-containerregistry/releases/download/v0.20.3/go-containerregistry_Linux_x86_64.tar.gz | gunzip | tar xvf - -C /tmp
+          ln -s /tmp/crane /usr/local/bin/crane
+        shell: bash
       - uses: deckhouse/modules-actions/cve_scan@v2
         with:
           image: ${{vars.DEV_MODULE_SOURCE}}/${{vars.MODULE_NAME}}
