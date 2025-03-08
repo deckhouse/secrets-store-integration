@@ -34,4 +34,4 @@ jobs:
           trivy_registry: ${{ vars.TRIVY_REGISTRY }}
           trivy_registry_user: ${{ vars.TRIVY_REGISTRY_USER }}
           trivy_registry_password: ${{ secrets.TRIVY_REGISTRY_PASSWORD }}
-          deckhouse_private_repo: ${{ secrets.DECKHOUSE_PRIVATE_REPO }}
+          deckhouse_private_repo: ${{ vars.DECKHOUSE_PRIVATE_REPO }}
