@@ -1,13 +1,5 @@
 name: Build and push for dev
 
-env:
-  MODULES_REGISTRY: ${{ vars.DEV_REGISTRY }}
-  CI_COMMIT_REF_NAME: ${{ github.ref_name }}
-  MODULES_MODULE_NAME: ${{ vars.MODULE_NAME }}
-  MODULES_MODULE_SOURCE: ${{ vars.DEV_MODULE_SOURCE }}
-  MODULES_REGISTRY_LOGIN: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
-  MODULES_REGISTRY_PASSWORD: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
-
 on:
   pull_request:
   push:
@@ -22,23 +14,17 @@ jobs:
       - name: Set vars for PR
         if: ${{ github.ref_name != 'main' }}
         run: |
-          MODULES_MODULE_TAG="$(echo pr${{ github.ref_name }} | sed 's/\/.*//g')"
-          echo "MODULES_MODULE_TAG=$MODULES_MODULE_TAG" >> "$GITHUB_ENV"
+          MODULE_TAG="$(echo pr${{ github.ref_name }} | sed 's/\/.*//g')"
+          echo "MODULE_TAG=$MODULES_MODULE_TAG" >> "$GITHUB_ENV"
         shell: bash
-      - name: Set vars for main
-        if: ${{ github.ref_name == 'main' }}
-        run: |
-          echo "MODULES_MODULE_TAG=${{ github.ref_name }}" >> "$GITHUB_ENV"
-        shell: bash
-      - name: Print vars
-        run: |
-          echo MODULES_REGISTRY=$MODULES_REGISTRY
-          echo CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME
-          echo MODULES_MODULE_NAME=$MODULES_MODULE_NAME
-          echo MODULES_MODULE_SOURCE=$MODULES_MODULE_SOURCE
-          echo MODULES_MODULE_TAG=$MODULES_MODULE_TAG
-        shell: bash
-
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/build@v1
+      - uses: deckhouse/modules-actions/setup@v2
+        with:
+          registry: ${{ vars.DEV_REGISTRY }}
+          registry_login: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
+          registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
+      - uses: deckhouse/modules-actions/build@v2
+        with:
+          module_source: ${{ vars.DEV_MODULE_SOURCE }}
+          module_name: ${{ vars.MODULE_NAME }}
+          module_tag: ${{ env.MODULE_TAG || github.ref_name }}
