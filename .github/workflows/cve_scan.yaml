@@ -1,0 +1,37 @@
+name: CVE Scan
+
+on:
+  pull_request:
+    types: [opened, reopened, labeled, synchronize]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: 'release branch name, example: release-1.68'
+        required: false
+
+jobs:
+  build_dev:
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/build_dev.yaml
+    secrets: inherit
+  cve_scan_on_pr:
+    if: github.event_name == 'pull_request'
+    name: Trivy images check
+    runs-on: [self-hosted, regular]
+    needs: [build_dev]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/cve_scan@main
+        with:
+          image: ${{ vars.DEV_MODULE_SOURCE }}/${{ vars.MODULE_NAME }}
+          tag: pr${{ github.event.number }}
+          module_name: ${{ vars.MODULE_NAME }}
+          dd_url: ${{ vars.DEFECTDOJO_HOST }}
+          dd_token: ${{ secrets.DEFECTDOJO_API_TOKEN }}
+          trivy_registry: ${{ vars.TRIVY_REGISTRY }}
+          trivy_registry_user: ${{ vars.TRIVY_REGISTRY_USER }}
+          trivy_registry_password: ${{ secrets.TRIVY_REGISTRY_PASSWORD }}
+          deckhouse_private_repo: ${{ vars.DECKHOUSE_PRIVATE_REPO }}

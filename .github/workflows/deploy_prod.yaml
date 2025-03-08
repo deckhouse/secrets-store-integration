@@ -80,8 +80,8 @@ jobs:
         run: |
           echo $MODULES_MODULE_SOURCE
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/deploy@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/deploy@v2
 
   job-EE:
     name: Edition EE
@@ -100,8 +100,8 @@ jobs:
         run: |
            echo $MODULES_MODULE_SOURCE
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/deploy@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/deploy@v2
 
   job-FE:
     name: Edition FE
@@ -120,8 +120,8 @@ jobs:
         run: |
            echo $MODULES_MODULE_SOURCE
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/deploy@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/deploy@v2
 
   job-BE:
     name: Edition BE
@@ -140,8 +140,8 @@ jobs:
         run: |
             echo $MODULES_MODULE_SOURCE
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/deploy@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/deploy@v2
 
   job-SE:
     name: Edition SE
@@ -160,8 +160,8 @@ jobs:
         run: |
             echo $MODULES_MODULE_SOURCE
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/deploy@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/deploy@v2
 
   job-SE-plus:
     name: Edition SE+
@@ -180,5 +180,5 @@ jobs:
         run: |
             echo $MODULES_MODULE_SOURCE
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/deploy@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/deploy@v2

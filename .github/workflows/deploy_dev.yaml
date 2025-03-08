@@ -28,7 +28,7 @@ on:
         description: "The module's tag, which must include the -dev1 postfix. For example: v1.21.1-dev1"
         type: string
         required: true
-      
+
       enableBuild:
         type: boolean
         default: true
@@ -54,7 +54,7 @@ jobs:
         shell: bash
 
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
+      - uses: deckhouse/modules-actions/setup@v2
       - if: ${{ github.event.inputs.enableBuild == 'true' }}
-        uses: deckhouse/modules-actions/build@v1
-      - uses: deckhouse/modules-actions/deploy@v1
+        uses: deckhouse/modules-actions/build@v2
+      - uses: deckhouse/modules-actions/deploy@v2

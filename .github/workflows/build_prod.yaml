@@ -31,8 +31,8 @@ jobs:
         name: Show vars
 
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/build@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/build@v2
 
   prod_be_setup_build:
     runs-on: ubuntu-latest
@@ -50,8 +50,8 @@ jobs:
         name: Show vars
 
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/build@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/build@v2
 
   prod_se_setup_build:
     runs-on: ubuntu-latest
@@ -69,8 +69,8 @@ jobs:
         name: Show vars
 
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/build@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/build@v2
 
   prod_se_plus_setup_build:
     runs-on: ubuntu-latest
@@ -88,8 +88,8 @@ jobs:
         name: Show vars
 
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/build@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/build@v2
 
   prod_ee_setup_build:
     runs-on: ubuntu-latest
@@ -107,8 +107,8 @@ jobs:
         name: Show vars
 
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/build@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/build@v2
 
   prod_fe_setup_build:
     runs-on: ubuntu-latest
@@ -126,5 +126,5 @@ jobs:
         name: Show vars
 
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v1
-      - uses: deckhouse/modules-actions/build@v1
+      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/build@v2

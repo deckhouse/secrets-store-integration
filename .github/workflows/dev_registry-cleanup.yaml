@@ -1,0 +1,24 @@
+name: Cleanup dev registry
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "12 0 * * 6"
+
+jobs:
+  lint:
+    runs-on: [self-hosted, regular, selectel]
+    name: Run cleanup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/setup@v2
+        with:
+          registry: ${{ vars.DEV_REGISTRY }}
+          registry_login: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
+          registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
+      - name: Cleanup
+        run: |
+          werf cleanup \
+          --repo ${{ vars.DEV_MODULE_SOURCE }}/${{ vars.MODULE_NAME }} \
+          --without-kube=true
+        shell: bash
