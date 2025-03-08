@@ -15,7 +15,7 @@ on:
 jobs:
   build_dev:
     if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/build_dev.yml
+    uses: ./.github/workflows/build_dev.yaml
     secrets: inherit
   cve_scan_on_pr:
     if: github.event_name == 'pull_request'
