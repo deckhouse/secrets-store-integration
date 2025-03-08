@@ -1,5 +1,8 @@
 name: Build and push for dev
 
+env:
+  CI_COMMIT_REF_NAME: ${{ github.ref_name }}
+
 on:
   pull_request:
   push:
