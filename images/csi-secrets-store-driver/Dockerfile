@@ -30,8 +30,8 @@ ENV SOURCE_TAG=${SOURCE_TAG}
 RUN apk add --no-cache git
 RUN cd / && git clone --depth 1 --branch ${SOURCE_TAG} ${SOURCE_REPO}
 WORKDIR /secrets-store-csi-driver
-ADD secrets-store-csi-driver.patch /secrets-store-csi-driver
-RUN git apply -v secrets-store-csi-driver.patch && rm -rf hack/tools
+ADD patches /secrets-store-csi-driver/patches
+RUN git apply -v patches/*.patch && rm -rf hack/tools
 RUN BUILD_TIMESTAMP=$(date +%Y-%m-%d-%H:%M) && \
     export LDFLAGS="-s -w -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildTime=$(BUILD_TIMESTAMP) -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildVersion=v1.4.0 -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.Vcs=fe" && \
     GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" ./cmd/secrets-store-csi-driver
