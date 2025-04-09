@@ -106,7 +106,13 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 		vaultConfig.ClientTimeout, _ = time.ParseDuration(viper.GetString("client_timeout"))
 	}
 
-	vaultConfig.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
+	if val, ok := annotations[common.ServiceAccountTokenVolumeNameAnnotation]; ok {
+		vaultConfig.ServiceAccountTokenVolumeName = val
+	} else if viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME") != "" {
+		vaultConfig.ServiceAccountTokenVolumeName = viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME")
+	} else {
+		vaultConfig.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
+	}
 
 	if val, ok := annotations[common.VaultIgnoreMissingSecretsAnnotation]; ok {
 		vaultConfig.IgnoreMissingSecrets = val
@@ -143,6 +149,12 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 	vaultConfig.EnvImage = viper.GetString("env_injector_image")
 
 	vaultConfig.EnvLogServer = viper.GetString("VAULT_ENV_LOG_SERVER")
+
+	if val, ok := annotations[common.VaultEnvImagePullPolicyAnnotation]; ok {
+		vaultConfig.EnvImagePullPolicy = getPullPolicy(val)
+	} else {
+		vaultConfig.EnvImagePullPolicy = getPullPolicy(viper.GetString("env_injector_pull_policy"))
+	}
 
 	if val, ok := annotations[common.SkipMutateContainersAnnotation]; ok {
 		vaultConfig.SkipMutateContainers = strings.Fields(val)
