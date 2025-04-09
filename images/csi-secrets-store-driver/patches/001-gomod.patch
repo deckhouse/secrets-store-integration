@@ -1,12 +1,12 @@
 diff --git a/go.mod b/go.mod
-index 01ca4d9..15efb25 100644
+index 01ca4d9..6893d9f 100644
 --- a/go.mod
 +++ b/go.mod
 @@ -1,6 +1,6 @@
  module sigs.k8s.io/secrets-store-csi-driver
  
 -go 1.21
-+go 1.23.0
++go 1.23.6
  
  require (
  	github.com/container-storage-interface/spec v1.6.0

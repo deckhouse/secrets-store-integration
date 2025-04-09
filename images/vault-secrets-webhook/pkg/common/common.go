@@ -23,7 +23,7 @@ import (
 const (
 	// Webhook annotations
 	// ref: https://bank-vaults.dev/docs/mutating-webhook/annotations/
-	MutateProbesAnnotation                = "secrets-store.deckhouse.io/mutate-probes"
+	MutateProbesAnnotation = "secrets-store.deckhouse.io/mutate-probes"
 
 	EnableJSONLogAnnotation = "secrets-store.deckhouse.io/enable-json-log"
 	// Vault annotations
@@ -38,6 +38,7 @@ const (
 	ServiceAccountTokenVolumeNameAnnotation = "secrets-store.deckhouse.io/service-account-token-volume-name"
 	LogLevelAnnotation                      = "secrets-store.deckhouse.io/log-level"
 	VaultEnvFromPathAnnotation              = "secrets-store.deckhouse.io/env-from-path"
+	VaultEnvImagePullPolicyAnnotation       = "secrets-store.deckhouse.io/env-injector-pull-policy"
 	SkipMutateContainersAnnotation          = "secrets-store.deckhouse.io/skip-mutate-containers"
 )
 

@@ -69,6 +69,7 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: vault-csi-provider
+      automountServiceAccountToken: true
       {{- include "ssi.imagePullSecrets" . | nindent 6 }}
       {{- include "helm_lib_tolerations" (tuple . "any-node") | nindent 6 }}
       {{- include "helm_lib_priority_class" (tuple . "cluster-medium") | nindent 6 }}
