@@ -249,7 +249,7 @@ Stronghold может использовать различные авториз
 | Аннотация                                        | Умолчание |  Назначение |
 |--------------------------------------------------|-----------|-------------|
 |secrets-store.deckhouse.io/role                   |           | Задает роль, с которой будет выполнено подключение к хранилищу секретов |
-|secrets-store.deckhouse.io/env-from-path          |           | Задает путь к секрету в хранилище, из которого будут извлечены все ключи и помещены в environment |
+|secrets-store.deckhouse.io/env-from-path          |           | Строка, содержащя список путей к секретам в хранилище через запятую, из которых будут извлечены все ключи и помещены в environment. Приоритет имеют ключи, которые находятся в списке ближе к концу. |
 |secrets-store.deckhouse.io/ignore-missing-secrets | false     | Запускает оригинальное приложение в случае ошибки получения секрета из хранилища |
 |secrets-store.deckhouse.io/client-timeout         | 10s       | Таймаут операции получения секретов |
 |secrets-store.deckhouse.io/mutate-probes          | false     | Инжектирует переменные окружения в пробы |
@@ -299,7 +299,7 @@ metadata:
   namespace: myapp-namespace
   annotations:
     secrets-store.deckhouse.io/role: "myapp-role"
-    secrets-store.deckhouse.io/env-from-path: demo-kv/data/myapp-secret
+    secrets-store.deckhouse.io/env-from-path: demo-kv/data/common-secret,demo-kv/data/myapp-secret
 spec:
   serviceAccountName: myapp-sa
   containers:

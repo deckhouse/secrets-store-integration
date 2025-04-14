@@ -115,7 +115,7 @@ Example commands to set up the environment:
 
   ```bash
   d8 stronghold kv get demo-kv/myapp-secret
-  ```  
+  ```
 
   The curl equivalent of the above command:
   ```bash
@@ -176,7 +176,7 @@ Example commands to set up the environment:
 * Create a database role and bind it to the `myapp-sa` ServiceAccount in the `myapp-namespace` namespace and the `myapp-ro-policy` policy:
 
   {{< alert level="danger">}}
-  **Important!**  
+  **Important!**
   In addition to the Stronghold side settings, you must configure the authorization permissions of the `serviceAccount` used in the kubernetes cluster.
   See the [paragraph below](#how-to-allow-a-serviceaccount-to-log-in-to-stronghold) section for details.
   {{< /alert >}}
@@ -218,7 +218,7 @@ Example commands to set up the environment:
 
 
 {{< alert level="info">}}
-**Important!**  
+**Important!**
 The recommended TTL value of the Kubernetes token is 10m.
 {{< /alert >}}
 
@@ -253,7 +253,7 @@ The following are the available annotations to modify the injector behavior:
 | Annotation                                       | Default value |  Function |
 |--------------------------------------------------|-----------|-------------|
 |secrets-store.deckhouse.io/role                   |           | Sets the role to be used to connect to the secret store |
-|secrets-store.deckhouse.io/env-from-path          |           | Specifies the path to the secret in the vault to retrieve all keys from and add them to the environment |
+|secrets-store.deckhouse.io/env-from-path          |           | A string containing a comma-delimited list of paths to secrets in the repository, from which all keys will be extracted and placed in the environment. Priority is given to keys that are closer to the end of the list. |
 |secrets-store.deckhouse.io/ignore-missing-secrets | false     | Runs the original application if an attempt to retrieve a secret from the store fails |
 |secrets-store.deckhouse.io/client-timeout         | 10s       | Timeout to use for secrets retrieval |
 |secrets-store.deckhouse.io/mutate-probes          | false     | Injects environment variables into the probes |
@@ -302,7 +302,7 @@ metadata:
   namespace: myapp-namespace
   annotations:
     secrets-store.deckhouse.io/role: "myapp-role"
-    secrets-store.deckhouse.io/env-from-path: demo-kv/data/myapp-secret
+    secrets-store.deckhouse.io/env-from-path: demo-kv/data/common-secret,demo-kv/data/myapp-secret
 spec:
   serviceAccountName: myapp-sa
   containers:
