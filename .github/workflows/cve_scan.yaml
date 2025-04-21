@@ -24,6 +24,8 @@ jobs:
     needs: [build_dev]
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: deckhouse/modules-actions/cve_scan@main
         with:
           image: ${{ vars.DEV_MODULE_SOURCE }}/${{ vars.MODULE_NAME }}

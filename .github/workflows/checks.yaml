@@ -25,6 +25,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - name: Get DMT
         run: |
           wget -qO- https://github.com/deckhouse/dmt/releases/download/v${DMT_VERSION}/dmt-${DMT_VERSION}-linux-amd64.tar.gz | gunzip | tar xvf - -C /tmp

@@ -22,16 +22,10 @@ RUN cd / && \
 
 FROM $BASE_GOLANG_ALPINE as artifact
 
-ARG SOURCE_REPO=https://github.com/kubernetes-sigs/secrets-store-csi-driver.git
-ENV SOURCE_REPO=${SOURCE_REPO}
-ARG SOURCE_TAG=v1.4.8
-ENV SOURCE_TAG=${SOURCE_TAG}
-
-RUN apk add --no-cache git
-RUN cd / && git clone --depth 1 --branch ${SOURCE_TAG} ${SOURCE_REPO}
-WORKDIR /secrets-store-csi-driver
-ADD patches /secrets-store-csi-driver/patches
-RUN git apply -v patches/*.patch && rm -rf hack/tools
+WORKDIR /build
+ADD secrets-store-csi-driver /build
+ADD patches /build/patches
+RUN git apply -v patches/*.patch
 RUN BUILD_TIMESTAMP=$(date +%Y-%m-%d-%H:%M) && \
     export LDFLAGS="-s -w -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildTime=$(BUILD_TIMESTAMP) -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildVersion=v1.4.0 -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.Vcs=fe" && \
     GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$LDFLAGS" ./cmd/secrets-store-csi-driver
@@ -41,6 +35,6 @@ RUN chown -R 64535:64535 secrets-store-csi-driver && \
 FROM $BASE_DISTROLESS
 COPY --from=mount /mount /bin/mount
 COPY --from=mount /umount /bin/umount
-COPY --from=artifact /secrets-store-csi-driver/secrets-store-csi /secrets-store-csi
+COPY --from=artifact /build/secrets-store-csi /secrets-store-csi
 
 ENTRYPOINT ["/secrets-store-csi"]

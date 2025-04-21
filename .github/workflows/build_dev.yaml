@@ -17,6 +17,8 @@ jobs:
     name: Build and Push images
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: deckhouse/modules-actions/setup@v2
         with:
           registry: ${{ vars.DEV_REGISTRY }}
