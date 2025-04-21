@@ -1,4 +1,4 @@
-ARG BASE_GOLANG_ALPINE=registry.deckhouse.io/base_images/golang:1.23.6-alpine3.20
+ARG BASE_GOLANG_ALPINE=golang:1.24.2-alpine3.20
 ARG BASE_DISTROLESS=registry.deckhouse.io/base_images/distroless:latest
 ARG BASE_ALPINE=registry.deckhouse.io/base_images/alpine:3.20.3
 
@@ -21,7 +21,7 @@ RUN cd / && \
     cd / && rm -rf util-linux
 
 FROM $BASE_GOLANG_ALPINE as artifact
-
+RUN apk add --no-cache git
 WORKDIR /build
 ADD secrets-store-csi-driver /build
 ADD patches /build/patches

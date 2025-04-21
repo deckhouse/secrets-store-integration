@@ -1,15 +1,7 @@
 diff --git a/go.mod b/go.mod
-index 8cf3a1f..8287397 100644
+index 8cf3a1f..0402e35 100644
 --- a/go.mod
 +++ b/go.mod
-@@ -1,6 +1,6 @@
- module github.com/hashicorp/vault-csi-provider
- 
--go 1.23.7
-+go 1.23.6
- 
- require (
- 	github.com/hashicorp/go-hclog v1.6.3
 @@ -57,7 +57,7 @@ require (
  	github.com/ryanuber/go-glob v1.0.0 // indirect
  	github.com/x448/float16 v0.8.4 // indirect

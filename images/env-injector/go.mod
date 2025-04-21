@@ -1,8 +1,6 @@
 module env-injector
 
-go 1.23.0
-
-toolchain go1.23.6
+go 1.23.6
 
 require (
 	emperror.dev/errors v0.8.1

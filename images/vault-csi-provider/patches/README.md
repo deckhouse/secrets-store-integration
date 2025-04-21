@@ -2,4 +2,4 @@
 
 ### 001-gomod.patch
 
-go version patch
+CVE fixes
