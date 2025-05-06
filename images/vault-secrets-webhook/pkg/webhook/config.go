@@ -84,9 +84,19 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 		return vaultConfig
 	}
 
-	vaultConfig.Addr = viper.GetString("addr")
+	if val, ok := annotations[common.VaultAddrAnnotation]; ok {
+		vaultConfig.Addr = val
+	} else {
+		vaultConfig.Addr = viper.GetString("addr")
+	}
+
 	vaultConfig.AuthMethod = "jwt"
-	vaultConfig.Path = viper.GetString("auth_path")
+
+	if val, ok := annotations[common.VaultPathAnnotation]; ok {
+		vaultConfig.Path = val
+	} else {
+		vaultConfig.Path = viper.GetString("auth_path")
+	}
 
 	if val, ok := annotations[common.VaultSkipVerifyAnnotation]; ok {
 		vaultConfig.SkipVerify, _ = strconv.ParseBool(val)
