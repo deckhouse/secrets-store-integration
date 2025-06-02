@@ -1,0 +1,68 @@
+name: CVE Scan
+
+on:
+  schedule:
+    - cron: '0 01 * * 0,3'
+  pull_request:
+    types: [opened, reopened, labeled, synchronize]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: 'Optional. Set minor version of release you want to scan. e.g.: 1.23'
+        required: false
+      scan_several_lastest_releases:
+        description: 'Optional. Whether to scan last several releases or not. true/false. For scheduled pipelines it is always true. Default is: false.'
+        required: false
+      latest_releases_amount:
+        description: 'Optional. Number of latest releases to scan. Default is: 3'
+        required: false
+      severity:
+        description: 'Optional. Vulnerabilities severity to scan. Default is: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+        required: false
+
+jobs:
+  cve_scan_on_pr:
+    if: github.event_name == 'pull_request'
+    name: CVE scan for PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/cve_scan@v3
+        with:
+          tag: pr${{ github.event.number }}
+          module_name: ${{ vars.MODULE_NAME }}
+          dd_url: ${{ secrets.DEFECTDOJO_HOST }}
+          dd_token: ${{ secrets.DEFECTDOJO_API_TOKEN }}
+          prod_registry: ${{ vars.PROD_READ_REGISTRY }}
+          prod_registry_user: ${{ secrets.PROD_REGISTRY_LOGIN }}
+          prod_registry_password: ${{ secrets.PROD_REGISTRY_PASSWORD }}
+          dev_registry: ${{ vars.DEV_REGISTRY }}
+          dev_registry_user: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
+          dev_registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
+          deckhouse_private_repo: ${{ secrets.DECKHOUSE_PRIVATE_REPO }}
+          severity: "HIGH,CRITICAL"
+  cve_scan:
+    if: github.event_name != 'pull_request'
+    name: Regular CVE scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/cve_scan@v3
+        with:
+          tag: ${{ github.event.inputs.release_branch || github.event.repository.default_branch }}
+          module_name: ${{ vars.MODULE_NAME }}
+          dd_url: ${{ secrets.DEFECTDOJO_HOST }}
+          dd_token: ${{ secrets.DEFECTDOJO_API_TOKEN }}
+          prod_registry: ${{ vars.PROD_REGISTRY }}
+          prod_registry_user: ${{ secrets.PROD_REGISTRY_LOGIN }}
+          prod_registry_password: ${{ secrets.PROD_REGISTRY_PASSWORD }}
+          dev_registry: ${{ vars.DEV_REGISTRY }}
+          dev_registry_user: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
+          dev_registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
+          deckhouse_private_repo: ${{ secrets.DECKHOUSE_PRIVATE_REPO }}
+          scan_several_lastest_releases: ${{ github.event.inputs.scan_several_lastest_releases }}
+          latest_releases_amount: ${{ github.event.inputs.latest_releases_amount || '3' }}
+          severity: ${{ github.event.inputs.severity }}

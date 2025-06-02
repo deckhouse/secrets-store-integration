@@ -1,0 +1,56 @@
+name: Svace
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_commit_ref_name:
+        description: 'branch or tag name'
+        required: true
+      ci_commit_hash:
+        description: 'commit hash'
+        required: true
+      svace_analyze_host:
+        description: 'hostname of the svace analyze vm'
+        required: true
+      svace_analyze_ssh_user:
+        description: 'ssh user to connect with to svace analyze vm'
+        required: true
+      svacer_url:
+        description: 'url to svacer server'
+        required: true
+      svacer_import_user:
+        description: 'user to import with analyzing results to svacer server'
+        required: true
+      svacer_import_password:
+        description: 'svacer import user password'
+        required: true
+      svace_analyze_ssh_private_key:
+        description: 'svacer import user password'
+        required: true
+      project_group:
+        description: 'project group name for svacer import'
+        required: false
+      if_no_group:
+        description: 'action '
+        required: false
+      skip_unreachable_procedure_analysis:
+        description: 'project group name for svacer import'
+        required: false
+
+## NOTE: to perform static analysis sources must be built using svace build and uploaded to svace analyze server to the correct location preserving strict directory hierarchy
+jobs:
+  analyze_module:
+    if: ${{ github.event.inputs.svace_enabled == true }}
+    name: Module static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: deckhouse/modules-actions/svace_analyze@v4
+        with:
+          ci_commit_ref_name: ${{ github.event.pull_request.head.ref }}
+          ci_commit_hash: ${{ github.event.pull_request.head.sha }}
+          svace_analyze_host: "${{ secrets.SVACE_ANALYZE_HOST }}"
+          svace_analyze_ssh_user: "${{ secrets.SVACE_ANALYZE_SSH_USER }}"
+          svacer_url: "${{ secrets.SVACER_URL }}"
+          svacer_import_user: "${{ secrets.SVACER_IMPORT_USER }}"
+          svacer_import_password: "${{ secrets.SVACER_IMPORT_PASSWORD }}"
+          svace_analyze_ssh_private_key: "${{ secrets.SVACE_ANALYZE_SSH_PRIVATE_KEY }}"

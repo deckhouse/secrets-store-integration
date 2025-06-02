@@ -1,0 +1,13 @@
+name: PR Checks
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    name: Lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: deckhouse/modules-actions/lint@v4

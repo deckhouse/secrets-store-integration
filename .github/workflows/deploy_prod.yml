@@ -48,12 +48,12 @@ jobs:
     if: github.event.inputs.ce == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/setup@v4
         with:
           registry: ${{ vars.PROD_REGISTRY }}
           registry_login: ${{ vars.PROD_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
-      - uses: deckhouse/modules-actions/deploy@v2
+      - uses: deckhouse/modules-actions/deploy@v4
         with:
           module_source: "${{ vars.PROD_REGISTRY }}/${{ vars.PROD_MODULE_SOURCE_NAME }}/ce/modules"
           module_name: ${{ vars.MODULE_NAME }}
@@ -66,12 +66,12 @@ jobs:
     if: github.event.inputs.ee == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/setup@v4
         with:
           registry: ${{ vars.PROD_REGISTRY }}
           registry_login: ${{ vars.PROD_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
-      - uses: deckhouse/modules-actions/deploy@v2
+      - uses: deckhouse/modules-actions/deploy@v4
         with:
           module_source: "${{ vars.PROD_REGISTRY }}/${{ vars.PROD_MODULE_SOURCE_NAME }}/ee/modules"
           module_name: ${{ vars.MODULE_NAME }}
@@ -84,12 +84,12 @@ jobs:
     if: github.event.inputs.fe == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/setup@v4
         with:
           registry: ${{ vars.PROD_REGISTRY }}
           registry_login: ${{ vars.PROD_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
-      - uses: deckhouse/modules-actions/deploy@v2
+      - uses: deckhouse/modules-actions/deploy@v4
         with:
           module_source: "${{ vars.PROD_REGISTRY }}/${{ vars.PROD_MODULE_SOURCE_NAME }}/fe/modules"
           module_name: ${{ vars.MODULE_NAME }}
@@ -102,12 +102,12 @@ jobs:
     if: github.event.inputs.be == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/setup@v4
         with:
           registry: ${{ vars.PROD_REGISTRY }}
           registry_login: ${{ vars.PROD_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
-      - uses: deckhouse/modules-actions/deploy@v2
+      - uses: deckhouse/modules-actions/deploy@v4
         with:
           module_source: "${{ vars.PROD_REGISTRY }}/${{ vars.PROD_MODULE_SOURCE_NAME }}/be/modules"
           module_name: ${{ vars.MODULE_NAME }}
@@ -119,12 +119,12 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.inputs.se == 'true'
     steps:
-      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/setup@v4
         with:
           registry: ${{ vars.PROD_REGISTRY }}
           registry_login: ${{ vars.PROD_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
-      - uses: deckhouse/modules-actions/deploy@v2
+      - uses: deckhouse/modules-actions/deploy@v4
         with:
           module_source: "${{ vars.PROD_REGISTRY }}/${{ vars.PROD_MODULE_SOURCE_NAME }}/se/modules"
           module_name: ${{ vars.MODULE_NAME }}
@@ -137,12 +137,12 @@ jobs:
     if: github.event.inputs.se-plus == 'true'
     steps:
       - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v2
+      - uses: deckhouse/modules-actions/setup@v4
         with:
           registry: ${{ vars.PROD_REGISTRY }}
           registry_login: ${{ vars.PROD_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
-      - uses: deckhouse/modules-actions/deploy@v2
+      - uses: deckhouse/modules-actions/deploy@v4
         with:
           module_source: "${{ vars.PROD_REGISTRY }}/${{ vars.PROD_MODULE_SOURCE_NAME }}/se-plus/modules"
           module_name: ${{ vars.MODULE_NAME }}
