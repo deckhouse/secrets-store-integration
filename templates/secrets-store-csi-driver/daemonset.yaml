@@ -120,7 +120,7 @@ spec:
               {{- include "node_driver_registrar_resources" . | nindent 14 }}
             {{- end }}
         - name: secrets-store
-          image: {{ include "helm_lib_module_image" (list . "csiSecretsStoreDriver") }}
+          image: {{ include "helm_lib_module_image" (list . "secretsStoreCsiDriver") }}
           imagePullPolicy: IfNotPresent
           {{- include "helm_lib_module_container_security_context_privileged_read_only_root_filesystem" . | nindent 10}}
           args:

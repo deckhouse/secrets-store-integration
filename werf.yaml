@@ -5,12 +5,13 @@ build:
     author: "Deckhouse Kubernetes Platform <contact@deckhouse.io>"
     clearHistory: true
     config:
-      clearWerfLabels: true
+      keepEssentialWerfLabels: true
       removeLabels:
         - /.*/
 ---
-{{ tpl (.Files.Get ".werf/images.yaml") $ }}
-{{ tpl (.Files.Get ".werf/images-digests.yaml") $ }}
-{{ tpl (.Files.Get ".werf/python-deps.yaml") $ }}
-{{ tpl (.Files.Get ".werf/bundle.yaml") $ }}
-{{ tpl (.Files.Get ".werf/release.yaml") $ }}
+{{ tpl (.Files.Get ".werf/stages/base-images.yaml") $ }}
+{{ tpl (.Files.Get ".werf/stages/images.yaml") $ }}
+{{ tpl (.Files.Get ".werf/stages/images-digests.yaml") $ }}
+{{ tpl (.Files.Get ".werf/stages/python-deps.yaml") $ }}
+{{ tpl (.Files.Get ".werf/stages/bundle.yaml") $ }}
+{{ tpl (.Files.Get ".werf/stages/release.yaml") $ }}
