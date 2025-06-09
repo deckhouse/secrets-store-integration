@@ -29,7 +29,7 @@ shell:
   - cd /src
   - go build -ldflags="-s -w" -o /{{ .ImageName }} .
   - chown -R 64535:64535 /{{ .ImageName }}
-  - chmod 0700 /{{ .ImageName }}
+  - chmod 0555 /{{ .ImageName }}
   - cd /
   - rm -rf /src
 secrets:
@@ -43,6 +43,7 @@ import:
   add: /{{ .ImageName }}
   to: /bin/{{ .ImageName }}
   before: install
+  stage: install
 imageSpec:
   config:
     entrypoint:
