@@ -1,0 +1,42 @@
+# Bundle image, stored in your.registry.io/modules/<module-name>:<semver>
+---
+image: bundle
+fromImage: builder/scratch
+import:
+# Rendering .werf/stages/images-digests.yaml is required! Comment out if not needed.
+- image: images-digests-and-version
+  add: /
+  to: /
+  includePaths:
+  - images_digests.json
+  - version.json
+  after: setup
+# Rendering .werf/stages/python-deps.yaml is required! Comment out if not needed.
+- image: python-dependencies
+  add: /lib/python/dist
+  to: /lib/python/dist
+  after: setup
+# Uncomment if you use batch hooks built with batch-go.yaml werf job
+# - image: batch-hooks
+#   add: /usr/local/bin/batchhooks
+#   to: /hooks/batchhooks
+#   after: setup
+git:
+- add: /
+  to: /
+  # Uncomment if you use batch-go.yaml werf job
+  # excludePaths:
+  # - hooks/batch # exclude sources
+  includePaths:
+  - .helmignore
+  - docs
+  - charts
+  - crds
+  - enabled
+  - hooks
+  - monitoring
+  - openapi
+  - templates
+  - Chart.yaml
+  - module.yaml
+  - values.yaml

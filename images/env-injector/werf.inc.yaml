@@ -1,0 +1,50 @@
+---
+image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
+fromImage: builder/src
+final: false
+git:
+- add: {{ .ImagePath }}
+  to: /src
+  stageDependencies:
+    install:
+    - '**/*'
+  excludePaths:
+  - .*
+  - '**/*_test.go'
+  - werf.inc.yaml
+---
+image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
+fromImage: builder/golang-alpine
+final: false
+import:
+- image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
+  add: /src
+  to: /src
+  before: install
+mount:
+{{ include "mount points for golang builds" . }}
+shell:
+  install:
+  - export GOPROXY=$(cat /run/secrets/GOPROXY) CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+  - cd /src
+  - go build -ldflags="-s -w" -o /bin/{{ .ImageName }} .
+  - chown -R 64535:64535 /bin/{{ .ImageName }}
+  - chmod 0555 /bin/{{ .ImageName }}
+  - cd /
+  - rm -rf /src
+secrets:
+- id: GOPROXY
+  value: {{ .GOPROXY }}
+---
+image: {{ .ModuleNamePrefix }}{{ .ImageName }}
+fromImage: base/distroless
+import:
+- image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
+  add: /bin/{{ .ImageName }}
+  to: /bin/{{ .ImageName }}
+  before: install
+  stage: install
+imageSpec:
+  config:
+    entrypoint:
+    - /bin/{{ .ImageName }}

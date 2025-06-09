@@ -1,0 +1,64 @@
+---
+image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
+fromImage: builder/src
+final: false
+git:
+- add: {{ .ImagePath }}
+  to: /src
+  stageDependencies:
+    install:
+    - '**/*'
+  excludePaths:
+  - .*
+  - '**/*_test.go'
+  - scripts
+  - werf.inc.yaml
+shell:
+  install:
+    - cd /src/secrets-store-csi-driver
+    - git apply /src/patches/*.patch --verbose
+---
+image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
+fromImage: builder/golang-alpine
+final: false
+import:
+- image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
+  add: /src/{{ .ImageName }}
+  to: /src
+  before: install
+mount:
+{{ include "mount points for golang builds" . }}
+shell:
+  install:
+  - cd /src
+  - export GOPROXY=$(cat /run/secrets/GOPROXY) GOOS=linux GOARCH=amd64 CGO_ENABLED=0
+  - export LDFLAGS="-s -w -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildVersion=v1.4.0 -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.Vcs=fe"
+  - go build -ldflags="$LDFLAGS" -o /{{ .ImageName }} ./cmd/secrets-store-csi-driver
+  - chown 64535:64535 /{{ .ImageName }}
+  - chmod 0700 /{{ .ImageName }}
+  - cd /
+  - rm -rf /src
+secrets:
+- id: GOPROXY
+  value: {{ .GOPROXY }}
+---
+image: {{ .ModuleNamePrefix }}{{ .ImageName }}
+fromImage: base/distroless
+import:
+- image: tools/util-linux
+  add: /bin/mount
+  to: /bin/mount
+  before: setup
+- image: tools/util-linux
+  add: /bin/umount
+  to: /bin/umount
+  before: setup
+- image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
+  add: /{{ .ImageName }}
+  to: /{{ .ImageName }}
+  before: setup
+imageSpec:
+  config:
+    entrypoint:
+    - /{{ .ImageName }}
+
