@@ -31,5 +31,5 @@ linters-settings:
     exclude-rules:
       license:
         directories:
-          - images/csi-secrets-store-driver/secrets-store-csi-driver
+          - images/secrets-store-csi-driver/secrets-store-csi-driver
           - images/vault-csi-provider/vault-csi-provider

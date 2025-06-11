@@ -1,6 +1,6 @@
 [submodule "images/secrets-store-csi-driver/secrets-store-csi-driver"]
 	path = images/secrets-store-csi-driver/secrets-store-csi-driver
-	url = https://github.com/kubernetes-sigs/secrets-store-csi-driver.git
+	url = ../../kubernetes-sigs/secrets-store-csi-driver.git
 [submodule "images/vault-csi-provider/vault-csi-provider"]
 	path = images/vault-csi-provider/vault-csi-provider
-	url = https://github.com/hashicorp/vault-csi-provider.git
+	url = ../../hashicorp/vault-csi-provider.git
