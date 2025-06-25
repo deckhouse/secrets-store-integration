@@ -60,6 +60,11 @@ def main(ctx: hook.Context):
             sps['metadata']['name'] = name
             sps['metadata']['namespace'] = namespace
             sps['spec']['parameters']['roleName'] = ssi['filterResult']['spec']['role']
+            sps['spec']['parameters']['vaultAuthMountPath'] = ssi['filterResult']['spec'].get('authPath')
+            sps['spec']['parameters']['vaultNamespace'] = ssi['filterResult']['spec'].get('namespace')
+            sps['spec']['parameters']['vaultAddress'] = ssi['filterResult']['spec'].get('address')
+            sps['spec']['parameters']['audience'] = ssi['filterResult']['spec'].get('audience')
+            sps['spec']['parameters']['vaultSkipTLSVerify'] = ssi['filterResult']['spec'].get('skipTLSVerify')
             sps['spec']['secretObjects'][0]['secretName'] = name
             for obj in ssi['filterResult']['spec']['files']:
                 sps['spec']['parameters']['objects'] += '- objectName: ' + \
@@ -82,6 +87,11 @@ def main(ctx: hook.Context):
             sps['metadata']['name'] = name
             sps['metadata']['namespace'] = namespace
             sps['spec']['parameters']['roleName'] = ctx.binding_context['filterResult']['spec']['role']
+            sps['spec']['parameters']['vaultAuthMountPath'] = ctx.binding_context['filterResult']['spec'].get('authPath')
+            sps['spec']['parameters']['vaultNamespace'] = ctx.binding_context['filterResult']['spec'].get('namespace')
+            sps['spec']['parameters']['vaultAddress'] = ctx.binding_context['filterResult']['spec'].get('address')
+            sps['spec']['parameters']['audience'] = ctx.binding_context['filterResult']['spec'].get('audience')
+            sps['spec']['parameters']['vaultSkipTLSVerify'] = ctx.binding_context['filterResult']['spec'].get('skipTLSVerify')
             sps['spec']['secretObjects'][0]['secretName'] = name
             for obj in ctx.binding_context['filterResult']['spec']['files']:
                 sps['spec']['parameters']['objects'] += '- objectName: ' + \
