@@ -5,14 +5,17 @@ oneOf:
     connectionConfiguration:
       type: string
       enum: ["DiscoverLocalStronghold"]
-  not:
-    required:
-    - connection
+    connection:
+      not:
+        required:
+          - url
 - properties:
     connectionConfiguration:
       type: string
       enum: ["Manual"]
-    connection: {}
+    connection:
+      required:
+        - url
   required:
   - connection
 properties:
@@ -25,20 +28,18 @@ properties:
     default: "DiscoverLocalStronghold"
   connection:
     type: object
-    required:
-      - url
     properties:
       url:
         type: string
         pattern: ^https://[\.:0-9a-zA-Z-]+$
         description: |
-          Stronghold or vault address
+          Stronghold or Vault address
         x-examples: [ "https://vault.mycompany.com:8200" ]
       caCert:
         type: string
         pattern: "^-----BEGIN CERTIFICATE-----\n(.+\n){5}"
         description: |
-          Stronghold or vault CA in PEM format
+          Stronghold or Vault CA in PEM format
       authPath:
         type: string
         pattern: ^[A-Za-z0-9-_]+$
@@ -46,3 +47,9 @@ properties:
         description: |
           Kubernetes Mount Path
         x-examples: [ "kubernetes", "kube-dev" ]
+      namespace:
+        type: string
+        pattern: ^[A-Za-z0-9-_\/]+$
+        description: |
+          Namespace in Vault-compatible store
+        x-examples: [ "ns1", "ns1/sub-ns2" ]

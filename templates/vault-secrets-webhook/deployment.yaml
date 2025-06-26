@@ -76,8 +76,14 @@ spec:
         {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "Manual" }}
         - name: ADDR
           value: {{ .Values.secretsStoreIntegration.connection.url }}
+        {{- end }}
+        {{- if and (.Values.secretsStoreIntegration.connection) (hasKey .Values.secretsStoreIntegration.connection "authPath") (ne .Values.secretsStoreIntegration.connection.authPath "") }}
         - name: AUTH_PATH
           value: {{ .Values.secretsStoreIntegration.connection.authPath }}
+        {{- end }}
+        {{- if and (.Values.secretsStoreIntegration.connection) (hasKey .Values.secretsStoreIntegration.connection "namespace") (ne .Values.secretsStoreIntegration.connection.namespace "") }}
+        - name: VAULT_NAMESPACE
+          value: {{ .Values.secretsStoreIntegration.connection.namespace }}
         {{- end }}
         ports:
         - containerPort: 8443
