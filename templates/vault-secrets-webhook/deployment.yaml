@@ -79,6 +79,10 @@ spec:
         - name: AUTH_PATH
           value: {{ .Values.secretsStoreIntegration.connection.authPath }}
         {{- end }}
+        {{- if and (.Values.secretsStoreIntegration.connection) (hasKey .Values.secretsStoreIntegration.connection "namespace") (ne .Values.secretsStoreIntegration.connection.namespace "") }}
+        - name: VAULT_NAMESPACE
+          value: {{ .Values.secretsStoreIntegration.connection.namespace }}
+        {{- end }}
         ports:
         - containerPort: 8443
           name: https

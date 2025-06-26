@@ -21,3 +21,6 @@ properties:
         type: string
         description: |
           Путь в Stronghold/Vault для подключения авторизации kubernetes
+      namespace:
+        description: |
+          Пространство имен в Vault-совместимом хранилище

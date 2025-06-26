@@ -92,6 +92,9 @@ spec:
             - -vault-addr=https://stronghold.d8-stronghold.svc:8300
             - -vault-mount=kubernetes_local
             {{- end }}
+            {{- if and (.Values.secretsStoreIntegration.connection) (hasKey .Values.secretsStoreIntegration.connection "namespace") (ne .Values.secretsStoreIntegration.connection.namespace "") }}
+            - -vault-namespace={{ .Values.secretsStoreIntegration.connection.namespace }}
+            {{- end }}
             - -endpoint=/provider/vault.sock
             - -debug=false
           resources:
