@@ -87,9 +87,12 @@ spec:
           args:
             {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "Manual" }}
             - -vault-addr={{ .Values.secretsStoreIntegration.connection.url }}
-            - -vault-mount={{ .Values.secretsStoreIntegration.connection.authPath }}
             {{- else }}
             - -vault-addr=https://stronghold.d8-stronghold.svc:8300
+            {{- end }}
+            {{- if and (.Values.secretsStoreIntegration.connection) (hasKey .Values.secretsStoreIntegration.connection "authPath") (ne .Values.secretsStoreIntegration.connection.authPath "") }}
+            - -vault-mount={{ .Values.secretsStoreIntegration.connection.authPath }}
+            {{- else }}
             - -vault-mount=kubernetes_local
             {{- end }}
             {{- if and (.Values.secretsStoreIntegration.connection) (hasKey .Values.secretsStoreIntegration.connection "namespace") (ne .Values.secretsStoreIntegration.connection.namespace "") }}
