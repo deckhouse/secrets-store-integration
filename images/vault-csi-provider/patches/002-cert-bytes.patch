@@ -1,0 +1,14 @@
+diff --git a/internal/config/config.go b/internal/config/config.go
+index fb4af20..7a44bd5 100644
+--- a/internal/config/config.go
++++ b/internal/config/config.go
+@@ -132,6 +132,9 @@ func parseParameters(parametersStr string) (Parameters, error) {
+ 	parameters.VaultRoleName = params["roleName"]
+ 	parameters.VaultAddress = params["vaultAddress"]
+ 	parameters.VaultNamespace = params["vaultNamespace"]
++	if cert, ok := params["vaultCACert"]; ok {
++		parameters.VaultTLSConfig.CACertBytes = []byte(cert)
++	}
+ 	parameters.VaultTLSConfig.CACert = params["vaultCACertPath"]
+ 	parameters.VaultTLSConfig.CAPath = params["vaultCADirectory"]
+ 	parameters.VaultTLSConfig.TLSServerName = params["vaultTLSServerName"]

@@ -63,8 +63,10 @@ def main(ctx: hook.Context):
             sps['spec']['parameters']['vaultAuthMountPath'] = ssi['filterResult']['spec'].get('authPath')
             sps['spec']['parameters']['vaultNamespace'] = ssi['filterResult']['spec'].get('namespace')
             sps['spec']['parameters']['vaultAddress'] = ssi['filterResult']['spec'].get('address')
+            sps['spec']['parameters']['vaultCACert'] = ssi['filterResult']['spec'].get('caCert')
             sps['spec']['parameters']['audience'] = ssi['filterResult']['spec'].get('audience')
-            sps['spec']['parameters']['vaultSkipTLSVerify'] = ssi['filterResult']['spec'].get('skipTLSVerify')
+            if (skip_tls:=ssi['filterResult']['spec'].get('skipTLSVerify')):
+                sps['spec']['parameters']['vaultSkipTLSVerify'] = str(skip_tls).lower()
             sps['spec']['secretObjects'][0]['secretName'] = name
             for obj in ssi['filterResult']['spec']['files']:
                 sps['spec']['parameters']['objects'] += '- objectName: ' + \
@@ -90,8 +92,10 @@ def main(ctx: hook.Context):
             sps['spec']['parameters']['vaultAuthMountPath'] = ctx.binding_context['filterResult']['spec'].get('authPath')
             sps['spec']['parameters']['vaultNamespace'] = ctx.binding_context['filterResult']['spec'].get('namespace')
             sps['spec']['parameters']['vaultAddress'] = ctx.binding_context['filterResult']['spec'].get('address')
+            sps['spec']['parameters']['vaultCACert'] = ctx.binding_context['filterResult']['spec'].get('caCert')
             sps['spec']['parameters']['audience'] = ctx.binding_context['filterResult']['spec'].get('audience')
-            sps['spec']['parameters']['vaultSkipTLSVerify'] = ctx.binding_context['filterResult']['spec'].get('skipTLSVerify')
+            if (skip_tls:=ctx.binding_context['filterResult']['spec'].get('skipTLSVerify')):
+                sps['spec']['parameters']['vaultSkipTLSVerify'] = str(skip_tls).lower()
             sps['spec']['secretObjects'][0]['secretName'] = name
             for obj in ctx.binding_context['filterResult']['spec']['files']:
                 sps['spec']['parameters']['objects'] += '- objectName: ' + \
