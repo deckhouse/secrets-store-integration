@@ -251,14 +251,17 @@ The credentials from `imagePullSecrets` specified in the pod manifest are used t
 
 The following are the available annotations to modify the injector behavior:
 | Annotation                                       | Default value |  Function |
-|--------------------------------------------------|-----------|-------------|
-|secrets-store.deckhouse.io/role                   |           | Sets the role to be used to connect to the secret store |
-|secrets-store.deckhouse.io/env-from-path          |           | A string containing a comma-delimited list of paths to secrets in the repository, from which all keys will be extracted and placed in the environment. Priority is given to keys that are closer to the end of the list. |
-|secrets-store.deckhouse.io/ignore-missing-secrets | false     | Runs the original application if an attempt to retrieve a secret from the store fails |
-|secrets-store.deckhouse.io/client-timeout         | 10s       | Timeout to use for secrets retrieval |
-|secrets-store.deckhouse.io/mutate-probes          | false     | Injects environment variables into the probes |
-|secrets-store.deckhouse.io/log-level              | info      | Logging level |
-|secrets-store.deckhouse.io/enable-json-log        | false     | Log format (string or JSON) |
+|--------------------------------------------------|-------------|-------------|
+|secrets-store.deckhouse.io/addr                   | from module | The address of the secrets store in the format https://stronghold.mycompany.tld:8200 |
+|secrets-store.deckhouse.io/auth-path              | from module | The path to use for authentication |
+|secrets-store.deckhouse.io/namespace              | from module | The namespace that will be used to connect to the store |
+|secrets-store.deckhouse.io/role                   |             | Sets the role to be used to connect to the secret store |
+|secrets-store.deckhouse.io/env-from-path          |             | A string containing a comma-delimited list of paths to secrets in the repository, from which all keys will be extracted and placed in the environment. Priority is given to keys that are closer to the end of the list. |
+|secrets-store.deckhouse.io/ignore-missing-secrets | false.      | Runs the original application if an attempt to retrieve a secret from the store fails |
+|secrets-store.deckhouse.io/client-timeout         | 10s         | Timeout to use for secrets retrieval |
+|secrets-store.deckhouse.io/mutate-probes          | false       | Injects environment variables into the probes |
+|secrets-store.deckhouse.io/log-level              | info        | Logging level |
+|secrets-store.deckhouse.io/enable-json-log        | false       | Log format (string or JSON) |
 
 The injector allows you to specify env templates instead of values in the pod manifests. They will be replaced at the container startup stage with the values from the store.
 
