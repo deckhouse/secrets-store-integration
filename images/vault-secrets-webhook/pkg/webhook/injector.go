@@ -332,6 +332,8 @@ func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, in
 
 func (i *SecretInjector) InjectSecretsFromVaultPath(paths string, inject SecretInjectorFunc) error {
 	vaultPaths := strings.Split(paths, ",")
+	// to remove duplicates when running with syscall.Exec
+	secretKVs := make(map[string]string)
 
 	for _, path := range vaultPaths {
 		split := strings.SplitN(path, "#", 2)
@@ -369,8 +371,12 @@ func (i *SecretInjector) InjectSecretsFromVaultPath(paths string, inject SecretI
 			if err != nil {
 				return errors.Wrap(err, "value can't be cast to a string for key: "+key)
 			}
-			inject(key, value)
+			secretKVs[key] = value
 		}
+	}
+
+	for key, value := range secretKVs {
+		inject(key, value)
 	}
 
 	return nil
