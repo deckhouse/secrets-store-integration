@@ -265,6 +265,17 @@ The following are the available annotations to modify the injector behavior:
 
 The injector allows you to specify env templates instead of values in the pod manifests. They will be replaced at the container startup stage with the values from the store.
 
+{{< alert level="info">}}
+**Note**  
+Including variables from a store branch has a higher priority than including explicitly defined variables from the store. This means that when using both the `secrets-store.deckhouse.io/env-from-path` annotation with a path to a secret that contains, for example, the `MY_SECRET` key, and an environment variable in the manifest with the same name:
+```yaml
+env:
+  - name: MY_SECRET
+    value: secrets-store:demo-kv/data/myapp-secret#password
+```
+the `MY_SECRET` environment variable inside the container will be set to the value of the secret from the **annotation**.
+{{< /alert >}}
+
 For example, here's how you can retrieve the `DB_PASS` key from the kv2-secret at `demo-kv/myapp-secret` from the Vault-compatible store:
 
 ```yaml

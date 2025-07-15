@@ -330,8 +330,10 @@ func main() {
 		environ[name] = value
 	}
 
+	// collect all secrets into a map, to avoid duplicate entries, then append to an environ
+	secretsSet := make(map[string]string)
 	inject := func(key, value string) {
-		sanitized.append(key, value)
+		secretsSet[key] = value
 	}
 
 	err = secretInjector.InjectSecretsFromVault(environ, inject)
@@ -348,6 +350,10 @@ func main() {
 		logger.Error(fmt.Errorf("failed to inject secrets from vault path: %w", err).Error())
 
 		os.Exit(1)
+	}
+
+	for key, value := range secretsSet {
+		sanitized.append(key, value)
 	}
 
 	if cast.ToBool(os.Getenv("VAULT_REVOKE_TOKEN")) {
