@@ -2,6 +2,7 @@ name: Build and push for prod
 
 env:
   CI_COMMIT_REF_NAME: ${{ github.ref_name }}
+  WERF_FINAL_IMAGES_ONLY: "true"
 
 on:
   push:

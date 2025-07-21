@@ -2,6 +2,7 @@ name: Deploy Dev
 
 env:
   CI_COMMIT_REF_NAME: ${{ github.event.inputs.tag }}
+  WERF_FINAL_IMAGES_ONLY: "true"
 
 on:
   workflow_dispatch:
