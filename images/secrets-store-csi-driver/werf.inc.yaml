@@ -44,6 +44,8 @@ secrets:
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}
 fromImage: base/distroless
+git:
+{{- include "image mount points" . }}
 import:
 - image: tools/util-linux
   add: /bin/mount

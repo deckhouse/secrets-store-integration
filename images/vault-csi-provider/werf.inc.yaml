@@ -43,6 +43,8 @@ secrets:
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}
 fromImage: base/distroless
+git:
+{{- include "image mount points" . }}
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
   add: /{{ .ImageName }}

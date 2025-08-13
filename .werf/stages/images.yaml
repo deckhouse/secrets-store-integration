@@ -7,6 +7,7 @@
   {{- $_ := set $ctx "ModuleNamePrefix" "" }}
   {{- $_ := set $ctx "GOPROXY" "https://proxy.golang.org,direct" }}
   {{- $_ := set $ctx "SOURCE_REPO" "false" }}
+  {{- $_ := set $ctx "Files" $.Files }}
 ---
   {{- /* For Dockerfile just render it from the folder. */ -}}
   {{- if not (regexMatch "/werf.inc.yaml$" $path) }}
