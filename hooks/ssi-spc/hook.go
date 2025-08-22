@@ -91,7 +91,7 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 		}
 		spc := secretProviderClassTemplate
 		deepCopy(&ssi, &spc)
-		input.PatchCollector.CreateOrUpdate(spc)
+		input.PatchCollector.CreateIfNotExists(spc)
 	}
 
 	return nil
