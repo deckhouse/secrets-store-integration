@@ -9,9 +9,21 @@ build:
       removeLabels:
         - /.*/
 ---
+# DistroPackagesProxy settings
+{{- $_ := set . "DistroPackagesProxy" (env "DISTRO_PACKAGES_PROXY" "") }}
+# Source repo  settings
+{{- $_ := set . "SOURCE_REPO" (env "SOURCE_REPO" "https://github.com") }}
+# goproxy  settings
+{{- $_ := set . "GOPROXY" (env "GOPROXY" "https://proxy.golang.org,direct") }}
+
+# svace analysis
+{{- $_ := set . "SVACE_ENABLED" (env "SVACE_ENABLED" "false") }}
+{{- $_ := set . "SVACE_ANALYZE_HOST" (env "SVACE_ANALYZE_HOST" "example.host") }}
+{{- $_ := set . "SVACE_ANALYZE_SSH_USER" (env "SVACE_ANALYZE_SSH_USER" "user") }}
+{{- $_ := set . "MODULES_MODULE_NAME" (env "MODULES_MODULE_NAME" "secrets-store-integration") }}
+---
 {{ tpl (.Files.Get ".werf/stages/base-images.yaml") $ }}
 {{ tpl (.Files.Get ".werf/stages/images.yaml") $ }}
 {{ tpl (.Files.Get ".werf/stages/images-digests.yaml") $ }}
-{{ tpl (.Files.Get ".werf/stages/python-deps.yaml") $ }}
 {{ tpl (.Files.Get ".werf/stages/bundle.yaml") $ }}
 {{ tpl (.Files.Get ".werf/stages/release.yaml") $ }}
