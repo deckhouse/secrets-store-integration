@@ -5,8 +5,17 @@
   {{- $_ := set $ctx "ImageName" ($path | split "/")._1 }}
   {{- $_ := set $ctx "ImagePath" (printf "/images/%s" $ctx.ImageName) }}
   {{- $_ := set $ctx "ModuleNamePrefix" "" }}
-  {{- $_ := set $ctx "GOPROXY" "https://proxy.golang.org,direct" }}
-  {{- $_ := set $ctx "SOURCE_REPO" "false" }}
+  {{- $_ := set $ctx "ModuleDir" "/" }}
+  {{- $_ := set $ctx "GOPROXY" $Root.GOPROXY }}
+  {{- $_ := set $ctx "SOURCE_REPO" $Root.SOURCE_REPO }}
+  {{- $_ := set $ctx "DistroPackagesProxy" $Root.DistroPackagesProxy }}
+  {{- $_ := set $ctx "Commit" $Root.Commit }}
+  {{- $_ := set $ctx "ProjectName" (printf "%s/%s" $Root.MODULES_MODULE_NAME $ctx.ImageName ) }}
+  {{- $_ := set $ctx "SVACE_IMAGE_SUFFIX" $Root.SVACE_IMAGE_SUFFIX }}
+  {{- $_ := set $ctx "SVACE_ENABLED" $Root.SVACE_ENABLED }}
+  {{- $_ := set $ctx "SVACE_ANALYZE_SSH_USER" $Root.SVACE_ANALYZE_SSH_USER }}
+  {{- $_ := set $ctx "SVACE_ANALYZE_HOST" $Root.SVACE_ANALYZE_HOST }}
+  {{- $_ := set $ctx "STRONGHOLD_EDITION" $Root.STRONGHOLD_EDITION }}
   {{- $_ := set $ctx "Files" $.Files }}
 ---
   {{- /* For Dockerfile just render it from the folder. */ -}}
