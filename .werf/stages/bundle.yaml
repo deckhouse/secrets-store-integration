@@ -21,6 +21,10 @@ import:
 #   add: /usr/local/bin/batchhooks
 #   to: /hooks/batchhooks
 #   after: setup
+- image: go-hooks-artifact
+  add: /go-hooks
+  to: /hooks/go-hooks
+  after: setup
 git:
 - add: /
   to: /
