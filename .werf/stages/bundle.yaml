@@ -29,8 +29,8 @@ git:
 - add: /
   to: /
   # Uncomment if you use batch-go.yaml werf job
-  # excludePaths:
-  # - hooks/batch # exclude sources
+  excludePaths:
+  - hooks/batch # exclude sources
   includePaths:
   - .helmignore
   - docs
