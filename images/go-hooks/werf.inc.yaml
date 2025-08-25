@@ -3,7 +3,7 @@ image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
 fromImage: builder/src
 final: false
 git:
-  - add: {{ .ModuleDir }}/hooks
+  - add: {{ .ModuleDir }}/hooks/batch
     to: /src/hooks/batch
     stageDependencies:
       install:

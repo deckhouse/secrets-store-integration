@@ -12,10 +12,10 @@ import:
   - version.json
   after: setup
 # Rendering .werf/stages/python-deps.yaml is required! Comment out if not needed.
-- image: python-dependencies
-  add: /lib/python/dist
-  to: /lib/python/dist
-  after: setup
+# - image: python-dependencies
+#   add: /lib/python/dist
+#   to: /lib/python/dist
+#   after: setup
 # Uncomment if you use batch hooks built with batch-go.yaml werf job
 # - image: batch-hooks
 #   add: /usr/local/bin/batchhooks
