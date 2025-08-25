@@ -42,6 +42,7 @@ var secretProviderClassTemplate = sscv1.SecretProviderClass{
 		},
 	},
 	Spec: sscv1.SecretProviderClassSpec{
+		Provider:   "vault",
 		Parameters: map[string]string{},
 	},
 }
