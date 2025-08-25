@@ -93,6 +93,8 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 		deepCopy(&ssiList[i], &spc)
 		if _, ok := spcExistanceMap[id{ssiList[i].Name, ssiList[i].Namespace}]; !ok {
 			input.PatchCollector.CreateIfNotExists(&spc)
+		} else {
+			input.PatchCollector.CreateOrUpdate(&spc)
 		}
 	}
 
