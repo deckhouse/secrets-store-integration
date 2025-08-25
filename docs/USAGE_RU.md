@@ -48,6 +48,7 @@ spec:
        WoR9b11eYfyrnKCYoSqBoi2dwkCkV1a0GN9vStwiBnKnAmV3B8B5yMnSjmp+42gt
        o2SYzqM=
        -----END CERTIFICATE-----
+   connectionConfiguration: Manual
 ```
 
 **Крайне рекомендуется задавать переменную `caCert`. Если она не задана, будет использовано содержимое системного ca-certificates.**
