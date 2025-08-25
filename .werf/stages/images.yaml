@@ -1,4 +1,5 @@
 {{- $ImagesBuildFiles := .Files.Glob "images/*/{Dockerfile,werf.inc.yaml}" }}
+{{- $Root := . }}
 
 {{- range $path, $content := $ImagesBuildFiles  }}
   {{- $ctx := dict }}
