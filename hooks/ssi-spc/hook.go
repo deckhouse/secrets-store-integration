@@ -7,13 +7,14 @@ import (
 	"context"
 	"fmt"
 	ssi "secrets-store-integration-hook/api"
+	"secrets-store-integration-hook/consts"
 
 	_ "github.com/deckhouse/module-sdk/common-hooks/ensure_crds"
 	"github.com/deckhouse/module-sdk/pkg"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 	"github.com/deckhouse/module-sdk/pkg/registry"
+	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 	sscv1 "sigs.k8s.io/secrets-store-csi-driver/apis/v1"
 )
 
@@ -31,14 +32,17 @@ type id struct {
 
 var secretProviderClassTemplate = sscv1.SecretProviderClass{
 	TypeMeta: metav1.TypeMeta{
-		Kind:       "SecretProviderClass",
-		APIVersion: "secrets-store.csi.x-k8s.io/v1",
+		Kind:       consts.SPCKind,
+		APIVersion: consts.SPCapiVersion,
 	},
 	ObjectMeta: metav1.ObjectMeta{
 		Labels: map[string]string{
 			"heritage": "deckhouse",
 			"module":   "secrets-store-integration",
 		},
+	},
+	Spec: sscv1.SecretProviderClassSpec{
+		Parameters: map[string]string{},
 	},
 }
 
@@ -47,59 +51,57 @@ var configUpstreamCRDCreateUpdate = &pkg.HookConfig{
 	Kubernetes: []pkg.KubernetesConfig{
 		{
 			Name:       "secrets-store-import",
-			APIVersion: "deckhouse.io/v1alpha1",
-			Kind:       "SecretsStoreImport",
+			APIVersion: consts.SSIapiVersion,
+			Kind:       consts.SSIKind,
 			JqFilter:   JQFilter,
 		},
 		{
 			Name:                         "secret-provider-class",
-			APIVersion:                   "secrets-store.csi.x-k8s.io/v1",
-			Kind:                         "SecretProviderClass",
+			APIVersion:                   consts.SPCapiVersion,
+			Kind:                         consts.SPCKind,
 			JqFilter:                     JQFilter,
-			ExecuteHookOnEvents:          pointer.Bool(false),
-			ExecuteHookOnSynchronization: pointer.Bool(false),
+			ExecuteHookOnEvents:          ptr.Bool(false),
+			ExecuteHookOnSynchronization: ptr.Bool(false),
 		},
 	},
 	Queue: "/modules/secrets-store-integration/secrets-store",
 }
 
 func HookHandler(ctx context.Context, input *pkg.HookInput) error {
-
-	secretsStoreImportList, err := objectpatch.UnmarshalToStruct[ssi.SecretStoreImport](input.Snapshots, "secrets-store-import")
+	ssiList, err := objectpatch.UnmarshalToStruct[ssi.SecretStoreImport](input.Snapshots, "secrets-store-import")
 	if err != nil {
 		return fmt.Errorf("unmarshal to struct: %w", err)
 	}
-	secretProviderClassList, err := objectpatch.UnmarshalToStruct[sscv1.SecretProviderClass](input.Snapshots, "secret-provider-class")
+	spcList, err := objectpatch.UnmarshalToStruct[sscv1.SecretProviderClass](input.Snapshots, "secret-provider-class")
 	if err != nil {
 		return fmt.Errorf("unmarshal to struct: %w", err)
 	}
-	var spcExistanceMap = make(map[id]struct{}, len(secretProviderClassList))
-	var ssiExistanceMap = make(map[id]struct{}, len(secretsStoreImportList))
+	var spcExistanceMap = make(map[id]struct{}, len(spcList))
+	var ssiExistanceMap = make(map[id]struct{}, len(ssiList))
 
-	for _, ssi := range secretsStoreImportList {
-		ssiExistanceMap[id{ssi.Metadata.Name, ssi.Metadata.Namespace}] = struct{}{}
+	for i := range ssiList {
+		ssiExistanceMap[id{ssiList[i].Name, ssiList[i].Namespace}] = struct{}{}
 	}
-	for _, spc := range secretProviderClassList {
-		spcExistanceMap[id{spc.Name, spc.Namespace}] = struct{}{}
-		if _, ok := ssiExistanceMap[id{spc.Name, spc.Namespace}]; !ok {
-			input.PatchCollector.Delete(spc.APIVersion, spc.Kind, spc.Namespace, spc.Name)
+	for i := range spcList {
+		spcExistanceMap[id{spcList[i].Name, spcList[i].Namespace}] = struct{}{}
+		if _, ok := ssiExistanceMap[id{spcList[i].Name, spcList[i].Namespace}]; !ok {
+			input.PatchCollector.Delete(consts.SPCapiVersion, consts.SPCKind, spcList[i].Namespace, spcList[i].Name)
 		}
 	}
-	for _, ssi := range secretsStoreImportList {
-		if _, ok := spcExistanceMap[id{ssi.Metadata.Name, ssi.Metadata.Namespace}]; !ok { // maybe check for field changes
-			continue
-		}
+	for i := range ssiList {
 		spc := secretProviderClassTemplate
-		deepCopy(&ssi, &spc)
-		input.PatchCollector.CreateIfNotExists(spc)
+		deepCopy(&ssiList[i], &spc)
+		if _, ok := spcExistanceMap[id{ssiList[i].Name, ssiList[i].Namespace}]; !ok {
+			input.PatchCollector.CreateIfNotExists(&spc)
+		}
 	}
 
 	return nil
 }
 
 func deepCopy(ssi *ssi.SecretStoreImport, spc *sscv1.SecretProviderClass) {
-	spc.ObjectMeta.Name = ssi.Metadata.Name
-	spc.ObjectMeta.Namespace = ssi.Metadata.Namespace
+	spc.Name = ssi.Name
+	spc.Namespace = ssi.Namespace
 	spc.Spec.Parameters["roleName"] = ssi.Spec.Role
 	spc.Spec.Parameters["vaultAuthMountPath"] = ssi.Spec.AuthPath
 	spc.Spec.Parameters["vaultNamespace"] = ssi.Spec.Namespace
@@ -111,8 +113,8 @@ func deepCopy(ssi *ssi.SecretStoreImport, spc *sscv1.SecretProviderClass) {
 	} else {
 		spc.Spec.Parameters["vaultSkipTLSVerify"] = "false"
 	}
-	spc.Spec.SecretObjects = make([]*sscv1.SecretObject, 1)
-	spc.Spec.SecretObjects[0].SecretName = ssi.Metadata.Name
+	spc.Spec.SecretObjects = []*sscv1.SecretObject{{}}
+	spc.Spec.SecretObjects[0].SecretName = ssi.Name
 	spc.Spec.SecretObjects[0].Data = make([]*sscv1.SecretObjectData, 0, len(ssi.Spec.Files))
 	for _, object := range ssi.Spec.Files {
 		spc.Spec.Parameters["objects"] = fmt.Sprintf("- objectName: %s\n  secretPath: %s\n  secretKey: %s\n", object.Name, object.Source.Path, object.Source.Key)
