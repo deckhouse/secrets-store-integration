@@ -86,7 +86,9 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 	for i := range spcList {
 		spcExistanceMap[id{spcList[i].Name, spcList[i].Namespace}] = struct{}{}
 		if _, ok := ssiExistanceMap[id{spcList[i].Name, spcList[i].Namespace}]; !ok {
-			input.PatchCollector.Delete(consts.SPCapiVersion, consts.SPCKind, spcList[i].Namespace, spcList[i].Name)
+			if spcList[i].Labels["heritage"] == "deckhouse" && spcList[i].Labels["module"] == "secrets-store-integration" {
+				input.PatchCollector.Delete(consts.SPCapiVersion, consts.SPCKind, spcList[i].Namespace, spcList[i].Name)
+			}
 		}
 	}
 	for i := range ssiList {
