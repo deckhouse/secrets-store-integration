@@ -44,6 +44,11 @@ var secretProviderClassTemplate = sscv1.SecretProviderClass{
 	Spec: sscv1.SecretProviderClassSpec{
 		Provider:   "vault",
 		Parameters: map[string]string{},
+		SecretObjects: []*sscv1.SecretObject{
+			{
+				Type: "Opaque",
+			},
+		},
 	},
 }
 
@@ -113,16 +118,14 @@ func deepCopy(ssi *ssi.SecretStoreImport, spc *sscv1.SecretProviderClass) {
 	spc.Spec.Parameters["vaultAddress"] = ssi.Spec.Address
 	spc.Spec.Parameters["vaultCACert"] = ssi.Spec.CACert
 	spc.Spec.Parameters["audience"] = ssi.Spec.Audience
+	spc.Spec.Parameters["vaultSkipTLSVerify"] = "false"
 	if ssi.Spec.SkipTLSVerify {
 		spc.Spec.Parameters["vaultSkipTLSVerify"] = "true"
-	} else {
-		spc.Spec.Parameters["vaultSkipTLSVerify"] = "false"
 	}
-	spc.Spec.SecretObjects = []*sscv1.SecretObject{{}}
 	spc.Spec.SecretObjects[0].SecretName = ssi.Name
 	spc.Spec.SecretObjects[0].Data = make([]*sscv1.SecretObjectData, 0, len(ssi.Spec.Files))
 	for _, object := range ssi.Spec.Files {
-		spc.Spec.Parameters["objects"] = fmt.Sprintf("- objectName: %s\n  secretPath: %s\n  secretKey: %s\n", object.Name, object.Source.Path, object.Source.Key)
+		spc.Spec.Parameters["objects"] = fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key)
 		spc.Spec.SecretObjects[0].Data = append(spc.Spec.SecretObjects[0].Data, &sscv1.SecretObjectData{
 			Key:        object.Source.Key,
 			ObjectName: object.Name,
