@@ -1,7 +1,7 @@
 // Copyright (c) Flant JSC
 // SPDX-License-Identifier: Apache-2.0
 
-package upstream_crd
+package ssi_spc
 
 import (
 	"context"
