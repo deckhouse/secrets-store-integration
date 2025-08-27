@@ -235,7 +235,7 @@ These settings allow any pod within the `myapp-namespace` namespace in both K8s 
 To log in to Stronghold, a k8s pod uses a token generated for its ServiceAccount. In order for Stronghold to be able to check the validity of the ServiceAccount data provided by the service, Stronghold must have permission to `get`, `list`, and `watch` for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` clusterRole for this.
 
 Stronghold can use different credentials to make requests to the Kubernetes API:
-1. Use the token of the application that is trying to log in to Stronghold. In this case, each service that logs in to Stronghold must have the `system:auth-delegator` clusterRole (or the API rights listed above) in the ServiceAccount it uses.
+1. Use the token of the application that is trying to log in to Stronghold. In this case, each service that logs in to Stronghold must have the `system:auth-delegator` clusterRole (or the API rights listed above) in the ServiceAccount it uses. [Check example in Stronghold documentation](../../../../stronghold/documentation/user/auth/kubernetes.html#use-the-stronghold-clients-jwt-as-the-reviewer-jwt)
 2. Use a static token created specifically for Stronghold `ServiceAccount` that has the necessary rights. Setting up Stronghold for this case is described in detail in [Stronghold documentation](../../../../stronghold/documentation/user/auth/kubernetes.html#continue-using-long-lived-tokens).
 
 ## Injecting environment variables
