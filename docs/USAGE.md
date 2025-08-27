@@ -67,7 +67,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 {{< /alert >}}
 
 > This guide will cover two ways to do this:
->   * using the console version of Stronghold ([Download the d8 multitool](#download--the-d8-multitool-for-stronghold-commands));
+>   * using the d8 multitool with integrated stronghold cli ([Download the d8 multitool](#download-the-d8-multitool-for-stronghold-commands));
 >   * using curl to make direct requests to the secrets store API.
 
 Before proceeding with the secret injection instructions in the examples below, do the following:
@@ -235,8 +235,8 @@ These settings allow any pod within the `myapp-namespace` namespace in both K8s 
 To log in to Stronghold, a k8s pod uses a token generated for its ServiceAccount. In order for Stronghold to be able to check the validity of the ServiceAccount data provided by the service, Stronghold must have permission to `get`, `list`, and `watch` for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` clusterRole for this.
 
 Stronghold can use different credentials to make requests to the Kubernetes API:
-1. Use the token of the application that is trying to log in to Stronghold. In this case, each service that logs in to Stronghold must have the `system:auth-delegator` clusterRole (or the API rights listed above) in the ServiceAccount it uses.
-2. Use a static token created specifically for Stronghold `ServiceAccount` that has the necessary rights. Setting up Stronghold for this case is described in detail in [Vault documentation](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
+1. Use the token of the application that is trying to log in to Stronghold. In this case, each service that logs in to Stronghold must have the `system:auth-delegator` clusterRole (or the API rights listed above) in the ServiceAccount it uses. [Check example in Stronghold documentation](../../../../stronghold/documentation/user/auth/kubernetes.html#use-the-stronghold-clients-jwt-as-the-reviewer-jwt)
+2. Use a static token created specifically for Stronghold `ServiceAccount` that has the necessary rights. Setting up Stronghold for this case is described in detail in [Stronghold documentation](../../../../stronghold/documentation/user/auth/kubernetes.html#continue-using-long-lived-tokens).
 
 ## Injecting environment variables
 
@@ -530,12 +530,12 @@ A container that uses the `subPath` volume mount will not get secret updates whe
 
 ### Official website of Deckhouse Kubernetes Platform
 
-Go to the official website and follow the [instructions](https://deckhouse.io/products/kubernetes-platform/documentation/v1/deckhouse-cli/#how-do-i-install-deckhouse-cli).
+Go to the official website and follow the [instructions](../../../documentation/v1/deckhouse-cli/#how-do-i-install-deckhouse-cli).
 
 ### The subdomain of your Deckhouse Kubernetes Platform
 
 To download the multitool:
-1. Go to the page `tools.<cluster_domain>`, where `<cluster_domain>` is the DNS name that matches the template defined in the [modules.publicDomainTemplate](deckhouse-configure-global.html#parameters-modules-publicdomaintemplate) parameter.
+1. Go to the page `tools.<cluster_domain>`, where `<cluster_domain>` is the DNS name that matches the template defined in the [modules.publicDomainTemplate](../../../documentation/v1/deckhouse-configure-global.html#parameters-modules-publicdomaintemplate) parameter.
 
 2. Select *Deckhouse CLI* for your operating system.
 1. **For Linux and MacOS:**
