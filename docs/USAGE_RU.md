@@ -5,7 +5,7 @@ description: Использование модуля secrets-store-integration.
 
 ## Настройка модуля для работы c Deckhouse Stronghold
 
-Для автоматической настройки работы модуля secrets-store-integration в связке с модулем [Deckhouse Stronghold](../../stronghold/stable/) потребуется ранее [включенный](../../stronghold/stable/usage.html#%D0%BA%D0%B0%D0%BA-%D0%B2%D0%BA%D0%BB%D1%8E%D1%87%D0%B8%D1%82%D1%8C) и настроенный Stronghold.
+Для автоматической настройки работы модуля secrets-store-integration в связке с модулем [Deckhouse Stronghold](../../stronghold/stable/) потребуется ранее [включенный](../../stronghold/stable/usage.html#включение-модуля) и настроенный Stronghold.
 
 Далее достаточно применить следующий ресурс:
 
@@ -67,7 +67,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 {{< /alert >}}
 
 > В этом руководстве мы приводим два вида примерных команд:
->   * команда с использованием консольной версии Stronghold ([Как получить бинарный файл stronghold](#как-получить-бинарный-файл-stronghold));
+>   * команда с использованием [мультитула d8](#скачать-мультитул-d8-для-команд-stronghold);
 >   * команда с использованием curl для выполнения прямых запросов в API secrets store.
 
 Для использования инструкций по инжектированию секретов из примеров ниже вам понадобится:
@@ -235,7 +235,7 @@ export VAULT_ADDR=https://secretstoreexample.com
 
 Stronghold может использовать различные авторизационные данные для осуществления запросов в API Kubernetes:
 1. Использовать токен приложения, которое пытается авторизоваться в Stronghold. В этом случае для каждого сервиса, авторизующегося в Stronghold, требуется в используемом ServiceAccount'е иметь clusterRole `system:auth-delegator` (либо права на API представленные выше).
-2. Использовать статичный токен отдельно созданного специально для Stronghold `ServiceAccount` у которого имеются необходимые права. Настройка Stronghold для такого случая подробно описана в [документации Vault](https://developer.hashicorp.com/vault/docs/auth/kubernetes#continue-using-long-lived-tokens).
+2. Использовать статичный токен отдельно созданного специально для Stronghold `ServiceAccount` у которого имеются необходимые права. Настройка Stronghold для такого случая подробно описана в [документации Stronghold](../../../../stronghold/documentation/user/auth/kubernetes.html#использование-долгоживущих-токенов).
 
 ## Инжектирование переменных окружения
 
@@ -526,12 +526,12 @@ for {
 
 ### Официальный сайт Deckhouse Kubernetes Platform
 
-Перейдите на официальный сайт и воспользуйтесь [инструкцией](https://deckhouse.ru/products/kubernetes-platform/documentation/v1/deckhouse-cli/#как-установить-deckhouse-cli)
+Перейдите на официальный сайт и воспользуйтесь [инструкцией](../../../documentation/v1/deckhouse-cli/#как-установить-deckhouse-cli)
 
 ### Субдомен вашей Deckhouse Kubernetes Platform
 
 Для скачивания мультитула:
-1. Перейдите на страницу `tools..<cluster_domain>`, где `<cluster_domain>` — DNS-имя в соответствии с шаблоном из параметра [modules.publicDomainTemplate](deckhouse-configure-global.html#parameters-modules-publicdomaintemplate) глобальной конфигурации.
+1. Перейдите на страницу `tools..<cluster_domain>`, где `<cluster_domain>` — DNS-имя в соответствии с шаблоном из параметра [modules.publicDomainTemplate](../../../documentation/v1/deckhouse-configure-global.html#parameters-modules-publicdomaintemplate) глобальной конфигурации.
 1. Выберите Deckhouse CLI для вашей операционной системы.
 1. **Для Linux и MacOS:**
    - Добавьте права на выполнение `d8` через `chmod +x d8`.
