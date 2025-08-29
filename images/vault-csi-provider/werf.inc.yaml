@@ -11,7 +11,7 @@ git:
   excludePaths:
   - .*
   - '**/*_test.go'
-  - scripts
+  - tools
   - werf.inc.yaml
 shell:
   install:
