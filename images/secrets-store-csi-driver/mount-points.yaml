@@ -1,4 +1,4 @@
 dirs:
   - /csi
   - /var/lib/kubelet/pods
-  - /var/run/secrets-store-csi-providers
+  - /run/secrets-store-csi-providers
