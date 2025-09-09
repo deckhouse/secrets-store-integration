@@ -111,33 +111,6 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: d8:secrets-store-integration:secrets-store-csi-driver:rotation
-  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: d8:secrets-store-integration:secrets-store-csi-driver:rotation
-subjects:
-- kind: ServiceAccount
-  name: secrets-store-csi-driver
-  namespace: d8-{{ $.Chart.Name }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: d8:secrets-store-integration:secrets-store-csi-driver:rotation
-  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - list
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
   name: d8:secrets-store-integration:secrets-store-csi-driver:rbac-proxy
   {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store")) | nindent 2 }}
 roleRef:
