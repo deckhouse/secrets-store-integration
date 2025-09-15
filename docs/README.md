@@ -55,7 +55,7 @@ There are several ways to deliver secrets to an application from a vault-compati
 <td>One app for the whole cluster (deployment)</td>
 <td>Secrets are delivered as environment variables at application startup</td>
 <td>Not stored</td>
-<td>implementation is in progress</td>
+<td>Implemented</td>
 </tr>
 <tr>
 <td><a style="color: ##0066FF;" href="#option-4-delivering-secrets-through-kubernetes-mechanisms">Kubernetes Secrets</a></td>
