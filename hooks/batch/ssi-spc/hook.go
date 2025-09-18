@@ -8,6 +8,7 @@ import (
 	"fmt"
 	ssi "secrets-store-integration-hook/api"
 	"secrets-store-integration-hook/consts"
+	"strings"
 
 	_ "github.com/deckhouse/module-sdk/common-hooks/ensure_crds"
 	"github.com/deckhouse/module-sdk/pkg"
@@ -124,11 +125,13 @@ func deepCopy(ssi *ssi.SecretStoreImport, spc *sscv1.SecretProviderClass) {
 	}
 	spc.Spec.SecretObjects[0].SecretName = ssi.Name
 	spc.Spec.SecretObjects[0].Data = make([]*sscv1.SecretObjectData, 0, len(ssi.Spec.Files))
+	var sb strings.Builder
 	for _, object := range ssi.Spec.Files {
-		spc.Spec.Parameters["objects"] = fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key)
+		sb.WriteString(fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key))
 		spc.Spec.SecretObjects[0].Data = append(spc.Spec.SecretObjects[0].Data, &sscv1.SecretObjectData{
 			Key:        object.Source.Key,
 			ObjectName: object.Name,
 		})
 	}
+	spc.Spec.Parameters["objects"] = sb.String()
 }
