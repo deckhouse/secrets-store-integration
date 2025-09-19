@@ -98,7 +98,10 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 	}
 	for i := range ssiList {
 		spc := secretProviderClassTemplate
-		deepCopy(&ssiList[i], &spc)
+		err := deepCopy(&ssiList[i], &spc)
+		if err != nil {
+			return fmt.Errorf("deepcopy: %w", err)
+		}
 		if _, ok := spcExistanceMap[id{ssiList[i].Name, ssiList[i].Namespace}]; !ok {
 			input.PatchCollector.CreateIfNotExists(&spc)
 		} else {
@@ -109,7 +112,7 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 	return nil
 }
 
-func deepCopy(ssi *ssi.SecretStoreImport, spc *SecretProviderClass) {
+func deepCopy(ssi *ssi.SecretStoreImport, spc *SecretProviderClass) error {
 	spc.Name = ssi.Name
 	spc.Namespace = ssi.Namespace
 	spc.Spec.Parameters["roleName"] = ssi.Spec.Role
@@ -126,7 +129,10 @@ func deepCopy(ssi *ssi.SecretStoreImport, spc *SecretProviderClass) {
 	spc.Spec.SecretObjects[0].Data = make([]*SecretObjectData, 0, len(ssi.Spec.Files))
 	var sb strings.Builder
 	for _, object := range ssi.Spec.Files {
-		sb.WriteString(fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key))
+		_, err := sb.WriteString(fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key))
+		if err != nil {
+			return fmt.Errorf("error populating objects: %w", err)
+		}
 		spc.Spec.SecretObjects[0].Data = append(spc.Spec.SecretObjects[0].Data, &SecretObjectData{
 			Key:          object.Source.Key,
 			ObjectName:   object.Name,
@@ -134,4 +140,5 @@ func deepCopy(ssi *ssi.SecretStoreImport, spc *SecretProviderClass) {
 		})
 	}
 	spc.Spec.Parameters["objects"] = sb.String()
+	return nil
 }
