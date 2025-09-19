@@ -15,8 +15,9 @@ type SecretStoreImportSpec struct {
 	Audience      string `json:"audience,omitempty"`
 	SkipTLSVerify bool   `json:"skipTLSVerify,omitempty"`
 	Files         []*struct {
-		Name   string `json:"name,omitempty"`
-		Source struct {
+		Name         string `json:"name,omitempty"`
+		DecodeBase64 bool   `json:"decodeBase64,omitempty"`
+		Source       struct {
 			Key  string `json:"key,omitempty"`
 			Path string `json:"path,omitempty"`
 		} `json:"source,omitempty"`
