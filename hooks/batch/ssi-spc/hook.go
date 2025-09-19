@@ -16,13 +16,12 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	sscv1 "sigs.k8s.io/secrets-store-csi-driver/apis/v1"
 )
 
 var _ = registry.RegisterFunc(configUpstreamCRDCreateUpdate, HookHandler)
 
 var JQFilter = `{
-	metadata: .metadata, 
+	metadata: .metadata,
 	spec:.spec
 }`
 
@@ -31,7 +30,7 @@ type id struct {
 	namespace string
 }
 
-var secretProviderClassTemplate = sscv1.SecretProviderClass{
+var secretProviderClassTemplate = SecretProviderClass{
 	TypeMeta: metav1.TypeMeta{
 		Kind:       consts.SPCKind,
 		APIVersion: consts.SPCapiVersion,
@@ -42,10 +41,10 @@ var secretProviderClassTemplate = sscv1.SecretProviderClass{
 			"module":   "secrets-store-integration",
 		},
 	},
-	Spec: sscv1.SecretProviderClassSpec{
+	Spec: SecretProviderClassSpec{
 		Provider:   "vault",
 		Parameters: map[string]string{},
-		SecretObjects: []*sscv1.SecretObject{
+		SecretObjects: []*SecretObject{
 			{
 				Type: "Opaque",
 			},
@@ -79,7 +78,7 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 	if err != nil {
 		return fmt.Errorf("unmarshal to struct: %w", err)
 	}
-	spcList, err := objectpatch.UnmarshalToStruct[sscv1.SecretProviderClass](input.Snapshots, "secret-provider-class")
+	spcList, err := objectpatch.UnmarshalToStruct[SecretProviderClass](input.Snapshots, "secret-provider-class")
 	if err != nil {
 		return fmt.Errorf("unmarshal to struct: %w", err)
 	}
@@ -99,7 +98,10 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 	}
 	for i := range ssiList {
 		spc := secretProviderClassTemplate
-		deepCopy(&ssiList[i], &spc)
+		err := deepCopy(&ssiList[i], &spc)
+		if err != nil {
+			return fmt.Errorf("deepcopy: %w", err)
+		}
 		if _, ok := spcExistanceMap[id{ssiList[i].Name, ssiList[i].Namespace}]; !ok {
 			input.PatchCollector.CreateIfNotExists(&spc)
 		} else {
@@ -110,7 +112,7 @@ func HookHandler(ctx context.Context, input *pkg.HookInput) error {
 	return nil
 }
 
-func deepCopy(ssi *ssi.SecretStoreImport, spc *sscv1.SecretProviderClass) {
+func deepCopy(ssi *ssi.SecretStoreImport, spc *SecretProviderClass) error {
 	spc.Name = ssi.Name
 	spc.Namespace = ssi.Namespace
 	spc.Spec.Parameters["roleName"] = ssi.Spec.Role
@@ -124,14 +126,19 @@ func deepCopy(ssi *ssi.SecretStoreImport, spc *sscv1.SecretProviderClass) {
 		spc.Spec.Parameters["vaultSkipTLSVerify"] = "true"
 	}
 	spc.Spec.SecretObjects[0].SecretName = ssi.Name
-	spc.Spec.SecretObjects[0].Data = make([]*sscv1.SecretObjectData, 0, len(ssi.Spec.Files))
+	spc.Spec.SecretObjects[0].Data = make([]*SecretObjectData, 0, len(ssi.Spec.Files))
 	var sb strings.Builder
 	for _, object := range ssi.Spec.Files {
-		sb.WriteString(fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key))
-		spc.Spec.SecretObjects[0].Data = append(spc.Spec.SecretObjects[0].Data, &sscv1.SecretObjectData{
-			Key:        object.Source.Key,
-			ObjectName: object.Name,
+		_, err := sb.WriteString(fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key))
+		if err != nil {
+			return fmt.Errorf("error populating objects: %w", err)
+		}
+		spc.Spec.SecretObjects[0].Data = append(spc.Spec.SecretObjects[0].Data, &SecretObjectData{
+			Key:          object.Source.Key,
+			ObjectName:   object.Name,
+			DecodeBase64: object.DecodeBase64,
 		})
 	}
 	spc.Spec.Parameters["objects"] = sb.String()
+	return nil
 }
