@@ -266,7 +266,7 @@ The following are the available annotations to modify the injector behavior:
 The injector allows you to specify env templates instead of values in the pod manifests. They will be replaced at the container startup stage with the values from the store.
 
 {{< alert level="info">}}
-**Note**  
+**Note**
 Including variables from a store branch has a higher priority than including explicitly defined variables from the store. This means that when using both the `secrets-store.deckhouse.io/env-from-path` annotation with a path to a secret that contains, for example, the `MY_SECRET` key, and an environment variable in the manifest with the same name:
 ```yaml
 env:
@@ -458,6 +458,43 @@ Delete the pod:
 ```bash
 kubectl -n myapp-namespace delete pod myapp3 --force
 ```
+### Delivering Binary Files to a Container
+
+There are situations when you need to deliver a binary file to a container. This could be a JKS container with keys,
+or a keytab for Kerberos authentication.
+In this case, you can encode the binary file using base64 and place it in the secrets store. When you retrieve it,
+the CSI driver will decode your data and place the binary file in the container. To do this, set the `decodeBase64`
+parameter to `true` for the corresponding file.
+If decoding fails (for example, the storage contains an invalid base64), the container will not be created.
+
+Example:
+
+Putting a file into storage
+
+```bash
+d8 stronghold kv put demo-kv/myapp-secret keytab=$(cat /path/to/keytab_file | base64 -w0)
+```
+
+SecretsStoreImport Manifest
+
+```yaml
+apiVersion: deckhouse.io/v1alpha1
+kind: SecretsStoreImport
+metadata:
+  name: myapp-ssi
+  namespace: myapp-namespace
+spec:
+  type: CSI
+  role: myapp-role
+  files:
+    - name: "keytab"
+      decodeBase64: true
+      source:
+        path: "demo-kv/data/myapp-secret"
+        key: "keytab"
+```
+
+In this case, a binary file named `keytab` will be created in the container
 
 ### The autorotation feature
 
