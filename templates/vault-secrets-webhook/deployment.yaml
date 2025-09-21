@@ -2,6 +2,7 @@
 cpu: 10m
 memory: 50Mi
 {{- end }}
+{{- if (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
 ---
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
@@ -25,6 +26,7 @@ spec:
     name: webhook
   updatePolicy:
     updateMode: "Initial"
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -113,9 +115,9 @@ spec:
         resources:
           requests:
             {{- include "helm_lib_module_ephemeral_storage_logs_with_extra" 10 | nindent 12 }}
-{{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+          {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
             {{- include "vault_secrets_webhook_resources" . | nindent 12 }}
-{{- end }}
+          {{- end }}
       - name: kube-rbac-proxy
         {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 8 }}
         image: {{ include "helm_lib_module_common_image" (list $ "kubeRbacProxy") }}

@@ -24,6 +24,7 @@ data:
   {{- $checksum_ca = (.Values.secretsStoreIntegration.connection.caCert | sha256sum) }}
 {{- end }}
 {{- end }}
+{{- if (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
 ---
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
@@ -46,6 +47,7 @@ spec:
     name: vault-csi-provider
   updatePolicy:
     updateMode: "Initial"
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
