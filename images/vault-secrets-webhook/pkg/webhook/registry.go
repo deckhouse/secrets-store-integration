@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -160,12 +160,39 @@ func (r *Registry) GetImageConfig(
 
 // getImageConfig download image blob from registry
 func getImageConfig(ctx context.Context, client kubernetes.Interface, container containerInfo, isDisabled bool) (*v1.Config, error) {
+	// If no imagePullSecrets, try with empty list (will use cloud providers)
+	secretCount := len(container.ImagePullSecrets)
+	if secretCount == 0 {
+		return tryGetImageConfig(ctx, client, container, isDisabled, []string{})
+	}
+
+	// Try with all secrets first
+	imageConfig, err := tryGetImageConfig(ctx, client, container, isDisabled, container.ImagePullSecrets)
+	if err == nil {
+		return imageConfig, nil
+	}
+
+	// If previous attempt fails, try each secret individually. Useful when used same registry but different path in registry
+	if secretCount >= 2 {
+		for i := secretCount - 1; i >= 0; i-- {
+			imageConfig, err := tryGetImageConfig(ctx, client, container, isDisabled, []string{container.ImagePullSecrets[i]})
+			if err == nil {
+				return imageConfig, nil
+			}
+		}
+	}
+	// If all individual secrets failed, return the original error
+	return nil, errors.Wrap(err, "all imagePullSecrets failed to pull")
+}
+
+// tryGetImageConfig attempts to get image config with specific secrets
+func tryGetImageConfig(ctx context.Context, client kubernetes.Interface, container containerInfo, isDisabled bool, imagePullSecrets []string) (*v1.Config, error) {
 	registrySkipVerify := isDisabled
 
 	chainOpts := k8schain.Options{
 		Namespace:          container.Namespace,
 		ServiceAccountName: container.ServiceAccountName,
-		ImagePullSecrets:   container.ImagePullSecrets,
+		ImagePullSecrets:   imagePullSecrets,
 	}
 
 	authChain, err := k8schain.New(
