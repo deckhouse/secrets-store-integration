@@ -9,5 +9,5 @@ jobs:
     continue-on-error: true
     name: Lint
     steps:
-      - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/lint@v4
+      - uses: actions/checkout@v5
+      - uses: deckhouse/modules-actions/lint@v5
