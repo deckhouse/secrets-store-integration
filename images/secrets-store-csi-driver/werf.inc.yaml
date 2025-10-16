@@ -11,7 +11,14 @@ git:
   excludePaths:
   - .*
   - '**/*_test.go'
-  - hack
+  - secrets-store-csi-driver/hack
+  - secrets-store-csi-driver/img
+  - secrets-store-csi-driver/docs
+  - secrets-store-csi-driver/config
+  - secrets-store-csi-driver/charts
+  - secrets-store-csi-driver/docker
+  - secrets-store-csi-driver/deploy
+  - secrets-store-csi-driver/manifest_staging
   - werf.inc.yaml
 shell:
   install:
