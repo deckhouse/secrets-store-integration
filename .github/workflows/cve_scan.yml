@@ -29,9 +29,9 @@ jobs:
     name: CVE scan for PR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: imjasonh/setup-crane@v0.4
-      - uses: deckhouse/modules-actions/cve_scan@v3
+      - uses: deckhouse/modules-actions/cve_scan@v5
         with:
           tag: pr${{ github.event.number }}
           module_name: ${{ vars.MODULE_NAME }}
@@ -50,9 +50,9 @@ jobs:
     name: Regular CVE scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: imjasonh/setup-crane@v0.4
-      - uses: deckhouse/modules-actions/cve_scan@v3
+      - uses: deckhouse/modules-actions/cve_scan@v5
         with:
           tag: ${{ github.event.inputs.release_branch || github.event.repository.default_branch }}
           module_name: ${{ vars.MODULE_NAME }}

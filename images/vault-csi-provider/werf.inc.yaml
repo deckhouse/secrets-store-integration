@@ -11,7 +11,7 @@ git:
   excludePaths:
   - .*
   - '**/*_test.go'
-  - tools
+  - vault-csi-provider/tools
   - werf.inc.yaml
 shell:
   install:
