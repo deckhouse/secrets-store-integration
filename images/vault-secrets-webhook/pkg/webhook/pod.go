@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 
 	"vault-secrets-webhook/pkg/common"
@@ -301,6 +302,11 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 				Name:      volumeName,
 				MountPath: mountPath,
 			})
+		} else if viper.GetString("cacert_bytes_b64") != "" {
+			container.Env = append(container.Env, corev1.EnvVar{
+				Name:  "VAULT_CACERT",
+				Value: "/vault/default_ca.crt",
+			})
 		}
 
 		if vaultConfig.VaultEnvFromPath != "" {
@@ -400,6 +406,13 @@ func getInitContainers(originalContainers []corev1.Container, podSecurityContext
 				},
 			},
 		})
+
+		if caB64 := viper.GetString("cacert_bytes_b64"); vaultConfig.TLSSecret == "" && caB64 != "" {
+			containers[0].Env = append(containers[0].Env, corev1.EnvVar{
+				Name:  "DEFAULT_CA_B64",
+				Value: caB64,
+			})
+		}
 	}
 
 	return containers

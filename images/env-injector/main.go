@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log/slog"
@@ -233,6 +234,20 @@ func main() {
 		if err != nil {
 			logger.Error(err.Error())
 			os.Exit(1)
+		}
+
+		// copy CA from env DEFAULT_CA_B64 decoded to file /vault/default_ca.crt
+		if caB64 := os.Getenv("DEFAULT_CA_B64"); caB64 != "" {
+			caData, err := base64.StdEncoding.DecodeString(caB64)
+			if err != nil {
+				logger.Error("failed to decode DEFAULT_CA_B64", slog.Any("error", err))
+				os.Exit(1)
+			}
+
+			if err = os.WriteFile("/vault/default_ca.crt", caData, 0644); err != nil {
+				logger.Error("failed to write /vault/default_ca.crt", slog.Any("error", err))
+				os.Exit(1)
+			}
 		}
 
 		os.Exit(0)
