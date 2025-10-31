@@ -2,11 +2,12 @@
 cpu: 10m
 memory: 50Mi
 {{- end }}
-{{- $caCertBytesB64 := "" }}
+
+{{- $VAULT_CACERT_BYTES := "" }}
 {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "DiscoverLocalStronghold" }}
-{{- with (lookup "v1" "Secret" "d8-stronghold" "stronghold-tls").data }}{{ $caCertBytesB64 = print (index . "ca.crt") }}{{ end }}
+  {{ $VAULT_CACERT_BYTES = .Values.secretsStoreIntegration.internal.localStrongholdCaCert }}
 {{- else if and .Values.secretsStoreIntegration.connection .Values.secretsStoreIntegration.connection.caCert }}
-{{- $caCertBytesB64 = (.Values.secretsStoreIntegration.connection.caCert | b64enc) }}
+  {{- $VAULT_CACERT_BYTES = (.Values.secretsStoreIntegration.connection.caCert) }}
 {{- end }}
 {{- if (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
 ---
@@ -91,9 +92,10 @@ spec:
         - name: VAULT_NAMESPACE
           value: {{ .Values.secretsStoreIntegration.connection.namespace }}
         {{- end }}
-        {{- if $caCertBytesB64 }}
-        - name: CACERT_BYTES_B64
-          value: {{ quote $caCertBytesB64 }}
+        {{- if $VAULT_CACERT_BYTES }}
+        - name: CACERT_BYTES
+          value: |
+            {{- $VAULT_CACERT_BYTES | nindent 12 }}
         {{- end }}
         ports:
         - containerPort: 8443

@@ -18,7 +18,6 @@ package webhook
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"strconv"
 
@@ -303,14 +302,10 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 				Name:      volumeName,
 				MountPath: mountPath,
 			})
-		} else if caCertBytesB64 := viper.GetString("cacert_bytes_b64"); caCertBytesB64 != "" {
-			decoded, err := base64.StdEncoding.DecodeString(caCertBytesB64)
-			if err != nil {
-				return false, err
-			}
+		} else if caCertBytes := viper.GetString("cacert_bytes"); caCertBytes != "" {
 			container.Env = append(container.Env, corev1.EnvVar{
 				Name:  "VAULT_CACERT_BYTES",
-				Value: string(decoded),
+				Value: caCertBytes,
 			})
 		}
 

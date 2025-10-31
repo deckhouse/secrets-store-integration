@@ -215,7 +215,7 @@ func SetConfigDefaults() {
 	viper.SetDefault("auth_method", "jwt")
 	viper.SetDefault("role", "")
 	viper.SetDefault("tls_secret", "")
-	viper.SetDefault("cacert_bytes_b64", "")
+	viper.SetDefault("cacert_bytes", "")
 	viper.SetDefault("client_timeout", "10s")
 	viper.SetDefault("ignore_missing_secrets", "false")
 	viper.SetDefault("tls_cert_file", "")
