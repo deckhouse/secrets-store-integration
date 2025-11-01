@@ -255,6 +255,7 @@ Stronghold может использовать различные авториз
 |secrets-store.deckhouse.io/addr                   | из модуля | Адрес хранилища секретов в формате https://stronghold.mycompany.tld:8200 |
 |secrets-store.deckhouse.io/tls-secret             | из модуля | Имя объекта *Secret* в *Kubernetes*, в котором есть ключ `ca.crt` со значением сертификата CA (Центра сертификации) в формате PEM |
 |secrets-store.deckhouse.io/tls-skip-verify        | false     | Отключение проверки TLS-сертификата сервера |
+|secrets-store.deckhouse.io/cacert_bytes           | из модуля | CA сертификат хранилища секретов в в формате PEM |
 |secrets-store.deckhouse.io/auth-path              | из модуля | Путь, который следует использовать при аутентификации |
 |secrets-store.deckhouse.io/namespace              | из модуля | Пространство имен, которое будет использоваться для подключения к хранилищу |
 |secrets-store.deckhouse.io/role                   |           | Роль, с которой будет выполнено подключение к хранилищу секретов |
