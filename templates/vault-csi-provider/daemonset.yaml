@@ -2,27 +2,12 @@
 cpu: 10m
 memory: 50Mi
 {{- end }}
-{{- $useCustomCert := or (eq .Values.secretsStoreIntegration.connectionConfiguration "DiscoverLocalStronghold") (and .Values.secretsStoreIntegration .Values.secretsStoreIntegration.connection .Values.secretsStoreIntegration.connection.caCert) }}
-{{- $checksum_ca := "" }}
-{{- if $useCustomCert }}
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: vault-csi-provider-certificates
-  namespace: d8-{{ $.Chart.Name }}
-  {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider" )) | nindent 2 }}
-data:
+
+{{- $VAULT_CACERT_BYTES := "" }}
 {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "DiscoverLocalStronghold" }}
-  {{- $secret := (lookup "v1" "Secret" "d8-stronghold" "stronghold-tls").data }}
-  {{- if $secret }}
-  ca.pem: {{ print (index $secret "ca.crt") }}
-  {{- $checksum_ca = (index $secret "ca.crt" | sha256sum) }}
-  {{- end }}
-{{- else }}
-  ca.pem: {{ .Values.secretsStoreIntegration.connection.caCert | b64enc }}
-  {{- $checksum_ca = (.Values.secretsStoreIntegration.connection.caCert | sha256sum) }}
-{{- end }}
+  {{ $VAULT_CACERT_BYTES = .Values.secretsStoreIntegration.internal.localStrongholdCaCert }}
+{{- else if and .Values.secretsStoreIntegration.connection .Values.secretsStoreIntegration.connection.caCert }}
+  {{- $VAULT_CACERT_BYTES = (.Values.secretsStoreIntegration.connection.caCert) }}
 {{- end }}
 {{- if (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
 ---
@@ -65,10 +50,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: vault-csi-provider
-      annotations:
-      {{- if $useCustomCert }}
-        checksum/ca: {{ $checksum_ca }}
-      {{- end }}
     spec:
       serviceAccountName: vault-csi-provider
       automountServiceAccountToken: true
@@ -82,9 +63,10 @@ spec:
           imagePullPolicy: IfNotPresent
           {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
           env:
-          {{- if $useCustomCert }}
-          - name: VAULT_CACERT
-            value: "/certificates/ca.pem"
+          {{- if $VAULT_CACERT_BYTES }}
+          - name: VAULT_CACERT_BYTES
+            value: |
+              {{- $VAULT_CACERT_BYTES | nindent 14 }}
           {{- end }}
           args:
             {{- if eq .Values.secretsStoreIntegration.connectionConfiguration "Manual" }}
@@ -111,10 +93,6 @@ spec:
           volumeMounts:
             - name: providervol
               mountPath: "/provider"
-          {{- if $useCustomCert }}
-            - name: certificates
-              mountPath: "/certificates"
-          {{- end }}
           livenessProbe:
             httpGet:
               path: "/health/ready"
@@ -139,8 +117,3 @@ spec:
         - name: providervol
           hostPath:
             path: "/var/run/secrets-store-csi-providers"
-        {{- if $useCustomCert }}
-        - name: certificates
-          secret:
-            secretName: vault-csi-provider-certificates
-        {{- end }}

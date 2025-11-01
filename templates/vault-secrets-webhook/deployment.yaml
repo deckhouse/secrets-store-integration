@@ -2,6 +2,13 @@
 cpu: 10m
 memory: 50Mi
 {{- end }}
+
+{{- $VAULT_CACERT_BYTES := "" }}
+{{- if eq .Values.secretsStoreIntegration.connectionConfiguration "DiscoverLocalStronghold" }}
+  {{ $VAULT_CACERT_BYTES = .Values.secretsStoreIntegration.internal.localStrongholdCaCert }}
+{{- else if and .Values.secretsStoreIntegration.connection .Values.secretsStoreIntegration.connection.caCert }}
+  {{- $VAULT_CACERT_BYTES = (.Values.secretsStoreIntegration.connection.caCert) }}
+{{- end }}
 {{- if (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
 ---
 apiVersion: autoscaling.k8s.io/v1
@@ -69,8 +76,6 @@ spec:
           value: ":8443"
         - name: ENV_INJECTOR_IMAGE
           value: {{ include "helm_lib_module_image" (list . "envInjector") }}
-        - name: TLS_SKIP_VERIFY
-          value: "true"
         - name: TELEMETRY_LISTEN_ADDRESS
           value: "127.0.0.1:8000"
         - name: SKIP_MUTATE_CONTAINERS
@@ -86,6 +91,11 @@ spec:
         {{- if and (.Values.secretsStoreIntegration.connection) (hasKey .Values.secretsStoreIntegration.connection "namespace") (ne .Values.secretsStoreIntegration.connection.namespace "") }}
         - name: VAULT_NAMESPACE
           value: {{ .Values.secretsStoreIntegration.connection.namespace }}
+        {{- end }}
+        {{- if $VAULT_CACERT_BYTES }}
+        - name: CACERT_BYTES
+          value: |
+            {{- $VAULT_CACERT_BYTES | nindent 12 }}
         {{- end }}
         ports:
         - containerPort: 8443

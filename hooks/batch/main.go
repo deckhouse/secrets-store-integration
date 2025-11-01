@@ -6,6 +6,7 @@ package main
 import (
 	"github.com/deckhouse/module-sdk/pkg/app"
 
+	_ "secrets-store-integration-hook/certificates"
 	_ "secrets-store-integration-hook/common"
 	_ "secrets-store-integration-hook/ssi-spc"
 )

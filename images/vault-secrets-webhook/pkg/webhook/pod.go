@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/spf13/viper"
 	corev1 "k8s.io/api/core/v1"
 
 	"vault-secrets-webhook/pkg/common"
@@ -300,6 +301,11 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 				Name:      volumeName,
 				MountPath: mountPath,
+			})
+		} else if caCertBytes := viper.GetString("cacert_bytes"); caCertBytes != "" {
+			container.Env = append(container.Env, corev1.EnvVar{
+				Name:  "VAULT_CACERT_BYTES",
+				Value: caCertBytes,
 			})
 		}
 

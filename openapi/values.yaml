@@ -25,3 +25,7 @@ properties:
           ca:
             type: string
             x-examples: ["YjY0ZW5jX3N0cmluZwo="]
+      localStrongholdCaCert:
+        type: string
+        description: |
+          CA certificate for local Stronghold cluster in PEM format

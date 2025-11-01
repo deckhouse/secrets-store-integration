@@ -1,6 +1,10 @@
 linters-settings:
   container:
     exclude-rules:
+      no-new-privileges:
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: secrets-store
       liveness-probe:
         - kind: DaemonSet
           name: csi-secrets-store
