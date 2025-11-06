@@ -250,6 +250,10 @@ Stronghold может использовать различные авториз
 <style>.annotations-table-style + .table-wrapper td:first-child{min-width: 317px}</style>
 <div class="annotations-table-style"></div>
 
+Доступные аннотации, позволяющие изменять поведение инжектора:
+<style>.annotations-table-style + .table-wrapper td:first-child{min-width: 317px}</style>
+<div class="annotations-table-style"></div>
+
 | Аннотация                                        | Умолчание |  Назначение |
 |--------------------------------------------------|-----------|-------------|
 |secrets-store.deckhouse.io/addr                   | из модуля | Адрес хранилища секретов в формате https://stronghold.mycompany.tld:8200 |

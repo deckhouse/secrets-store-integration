@@ -256,8 +256,6 @@ The following are the available annotations to modify the injector behavior:
 | Annotation                                       | Default value |  Function |
 |--------------------------------------------------|-------------|-------------|
 |secrets-store.deckhouse.io/addr                   | from module | The address of the secrets store in the format https://stronghold.mycompany.tld:8200 |
-|secrets-store.deckhouse.io/tls-secret             | from module | Name of the *Secret* object in *Kubernetes*, that contains entry with `ca.crt` as a key and CA certificate of the secrets store in PEM format as a value |
-|secrets-store.deckhouse.io/tls-skip-verify        | false       | Disable verification of TLS certificates |
 |secrets-store.deckhouse.io/cacert_bytes           | from module | CA certificate of the secrets store in PEM format |
 |secrets-store.deckhouse.io/auth-path              | from module | The path to use for authentication |
 |secrets-store.deckhouse.io/namespace              | from module | The namespace that will be used to connect to the store |
