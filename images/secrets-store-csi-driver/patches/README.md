@@ -9,3 +9,7 @@ Allow to create binary files
 
 Disabled secrets creation.
 Changed driver name and CR name.
+
+### 003-cve-fixes.patch
+
+CVE fixes
