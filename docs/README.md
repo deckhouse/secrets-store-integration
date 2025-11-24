@@ -120,8 +120,6 @@ bash -c "for file in $(ls /mnt/secrets); do export  $file=$(cat /mnt/secrets/$fi
 
 #### Delivering environment variables into the container through entrypoint injection
 
-> *Status:* secure option. This option is currently being developed.
-
 Environment variables are propagated into the container at application startup. They are stored in RAM only. At first, variables will be delivered via the entrypoint injection into the container. In the future, we plan to integrate the secrets delivery mechanism into containerd.
 
 ### Option #4: Delivering secrets using Kubernetes mechanisms
