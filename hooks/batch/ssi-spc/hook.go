@@ -65,7 +65,7 @@ var configUpstreamCRDCreateUpdate = &pkg.HookConfig{
 			Name:                         "secret-provider-class",
 			APIVersion:                   consts.SPCapiVersion,
 			Kind:                         consts.SPCKind,
-			JqFilter:                     JQFilter,
+			JqFilter:                     `{ metadata: .metadata }`,
 			ExecuteHookOnEvents:          ptr.Bool(false),
 			ExecuteHookOnSynchronization: ptr.Bool(false),
 		},
