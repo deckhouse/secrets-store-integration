@@ -19,8 +19,8 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,6 +37,12 @@ type SecretsStoreImportReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+}
+
+type vaultObject struct {
+	ObjectName string `yaml:"objectName"`
+	SecretPath string `yaml:"secretPath"`
+	SecretKey  string `yaml:"secretKey"`
 }
 
 // +kubebuilder:rbac:groups=deckhouse.io,resources=secretsstoreimports,verbs=get;list;watch;create;update;patch;delete
@@ -137,23 +143,25 @@ func createSecretProviderClassFromSSI(ssi *deckhouseiov1alpha1.SecretsStoreImpor
 	parameters["vaultSkipTLSVerify"] = vaultSkipTLSVerify
 
 	// Build objects YAML string and secret object data
-	var sb strings.Builder
-	secretObjectData := make([]interface{}, 0, len(ssi.Spec.Files))
-	for _, object := range ssi.Spec.Files {
-		_, err := sb.WriteString(fmt.Sprintf("- objectName: \"%s\"\n  secretPath: \"%s\"\n  secretKey: \"%s\"\n", object.Name, object.Source.Path, object.Source.Key))
-		if err != nil {
-			return nil, fmt.Errorf("error populating objects: %w", err)
-		}
-		dataItem := map[string]interface{}{
-			"objectName": object.Name,
-			"key":        object.Source.Key,
-		}
-		if object.DecodeBase64 {
-			dataItem["decodeBase64"] = true
-		}
-		secretObjectData = append(secretObjectData, dataItem)
+	vaultObjects := make([]vaultObject, 0, len(ssi.Spec.Files))
+	secretObjectData := make([]SecretObjectData, 0, len(ssi.Spec.Files))
+	for _, file := range ssi.Spec.Files {
+		vaultObjects = append(vaultObjects, vaultObject{
+			ObjectName: file.Name,
+			SecretPath: file.Source.Path,
+			SecretKey:  file.Source.Key,
+		})
+		secretObjectData = append(secretObjectData, SecretObjectData{
+			Key:          file.Source.Key,
+			ObjectName:   file.Name,
+			DecodeBase64: file.DecodeBase64,
+		})
 	}
-	parameters["objects"] = sb.String()
+	objectsYAML, err := yaml.Marshal(vaultObjects)
+	if err != nil {
+		return nil, fmt.Errorf("marshal vault objects: %w", err)
+	}
+	parameters["objects"] = string(objectsYAML)
 
 	// Build secret objects array
 	secretObjects := []interface{}{
