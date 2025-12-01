@@ -1,0 +1,78 @@
+{{- define "ssi_controller_resources" }}
+cpu: 10m
+memory: 20Mi
+{{- end }}
+
+{{- if (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: ssi-controller
+  namespace: d8-{{ $.Chart.Name }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "ssi-controller")) | nindent 2 }}
+spec:
+  resourcePolicy:
+    containerPolicies:
+    - containerName: ssi-controller
+      minAllowed:
+        {{- include "ssi_controller_resources" . | nindent 8 }}
+      maxAllowed:
+        cpu: 100m
+        memory: 200Mi
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: ssi-controller
+  updatePolicy:
+    updateMode: "Initial"
+{{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ssi-controller
+  namespace: d8-{{ $.Chart.Name }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "ssi-controller")) | nindent 2 }}
+spec:
+  {{- include "helm_lib_deployment_on_master_strategy_and_replicas_for_ha" . | nindent 2 }}
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: ssi-controller
+  template:
+    metadata:
+      labels:
+        app: ssi-controller
+        stronghold.deckhouse.io/mutate: skip
+    spec:
+      serviceAccountName: ssi-controller
+      automountServiceAccountToken: true
+      {{- include "helm_lib_priority_class" (tuple . "system-cluster-critical") | nindent 6 }}
+      {{- include "helm_lib_pod_anti_affinity_for_ha" (list . (dict "app" "ssi-controller")) | nindent 6 }}
+      {{- include "helm_lib_node_selector" (tuple . "master") | nindent 6 }}
+      {{- include "helm_lib_tolerations" (tuple . "any-node" "with-uninitialized") | nindent 6 }}
+      {{- include "helm_lib_module_pod_security_context_run_as_user_nobody" . | nindent 6 }}
+      {{- include "ssi.imagePullSecrets" . | nindent 6 }}
+      containers:
+      - name: ssi-controller
+        {{- include "helm_lib_module_container_security_context_pss_restricted_flexible" dict | nindent 8 }}
+        command:
+        - /bin/ssi-controller
+        args:
+        - -leader-elect
+        image: {{ include "helm_lib_module_image" (list . "ssiController") }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+        resources:
+          requests:
+            {{- include "helm_lib_module_ephemeral_storage_logs_with_extra" 10 | nindent 12 }}
+          {{- if not (.Values.global.enabledModules | has "vertical-pod-autoscaler-crd") }}
+            {{- include "ssi_controller_resources" . | nindent 12 }}
+          {{- end }}
