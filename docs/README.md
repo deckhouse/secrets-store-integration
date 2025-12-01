@@ -111,7 +111,7 @@ To do so:
 - Define the environment variables so that their names correspond to the file names and values correspond to the file contents.
 - Run the application.
 
-Refer to the Bash example:
+Refer to the bash example:
 
 ```bash
 bash -c "for file in $(ls /mnt/secrets); do export  $file=$(cat /mnt/secrets/$file); done ; exec my_original_file_to_startup"
@@ -120,7 +120,7 @@ bash -c "for file in $(ls /mnt/secrets); do export  $file=$(cat /mnt/secrets/$fi
 Pros:
 
 - Only two containers, whose resource requirements are known in advance, are required on each node to deliver secrets to applications.
-- Creating SecretsStore/SecretProviderClass resources reduces the amount of repetitive code compared to other vault agent implementations.
+- Creating SecretsStore/SecretProviderClass resources reduces the amount of repetitive code compared to other Vault Agent implementations.
 - If necessary, you can create a Kubernetes secret that is a copy of the secret retrieved from the vault.
 - The secret is retrieved from the vault by the CSI driver at the container creation stage. This means that pods will be started only after the secrets are read from the vault and written to the container volume.
 
@@ -138,7 +138,7 @@ This integration method relies on the Kubernetes secrets operator with a set of 
 
 Pros:
 
-- This is the traditional way of passing a secret to an application via environment variables - all you have to do is to hook up the Kubernetes secret.
+- This is the traditional way of passing a secret to an application via environment variables — all you have to do is to hook up the Kubernetes secret.
 
 Cons:
 
