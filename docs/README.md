@@ -3,7 +3,7 @@ title: "The secrets-store-integration module"
 description: "The secrets-store-integration module integrates secret stores and applications in K8s clusters"
 ---
 
-The secrets-store-integration module delivers secrets to the application pods in the Kubernetes
+The `secrets-store-integration` module delivers secrets to the application pods in the Kubernetes
 cluster by mounting multiple secrets, keys, and certificates stored in external secret stores.
 
 Secrets are mounted into pods as volumes using the CSI driver implementation.
@@ -11,7 +11,7 @@ Note that secret stores must be compatible with the HashiCorp Vault API.
 
 ## Delivering secrets to applications
 
-There are several ways to deliver secrets to an application from a vault-compatible storage:
+There are several ways to deliver secrets to an application from a Vault-compatible storage:
 
 1. Your application itself can access the vault.
 
@@ -45,27 +45,27 @@ There are several ways to deliver secrets to an application from a vault-compati
 </tr>
 <tr>
 <td><a style="color: ##0066FF;" href="#csi-interface">CSI Interface</a></td>
-<td>Two pods per node (daemonset)</td>
+<td>Two pods per node (DaemonSet)</td>
 <td><ul><li>From the disk volume (as a file)</li><li>From the environment variable</li></ul></td>
 <td>Not stored</td>
 <td>Implemented</td>
 </tr>
 <tr>
 <td><a style="color: ##0066FF;" href="#option-3-entrypoint-injection">Entrypoint injection</a></td>
-<td>One app for the whole cluster (deployment)</td>
+<td>One app for the whole cluster (Deployment)</td>
 <td>Secrets are delivered as environment variables at application startup</td>
 <td>Not stored</td>
 <td>Implemented</td>
 </tr>
 <tr>
 <td><a style="color: ##0066FF;" href="#option-4-delivering-secrets-through-kubernetes-mechanisms">Kubernetes Secrets</a></td>
-<td>One app for the whole cluster (deployment)</td>
+<td>One app for the whole cluster (Deployment)</td>
 <td><ul><li>From the disk volume (as a file)</li><li>From the environment variable</li></ul></td>
 <td>Stored as a Kubernetes Secret</td>
 <td>Planned for implementation and release</td>
 </tr>
 <tr>
-<td><a style="color: #A9A9A9; font-style: italic;" href="#for-reference-vault-agent-injector">Vault-agent Injector</a></td>
+<td><a style="color: #A9A9A9; font-style: italic;" href="#for-reference-vault-agent-injector">Vault Agent Injector</a></td>
 <td style="color: #A9A9A9; font-style: italic;">One agent per pod (sidecar)</td>
 <td style="color: #A9A9A9; font-style: italic;">From the disk volume (as a file)</td>
 <td style="color: #A9A9A9; font-style: italic;">Not stored</td>
@@ -82,11 +82,11 @@ There are several ways to deliver secrets to an application from a vault-compati
 
 The application accesses the Stronghold API and retrieves the secret over HTTPS using the SA authorization token.
 
-#### Pros:
+Pros:
 
 - The secret received by the application is not stored anywhere other than the application itself. There is no danger that it will be compromised during the transmission.
 
-#### Cons:
+Cons:
 
 - The application will need to be modified for it to work with Stronghold.
 - You would have to re-implement secret access in each application, and if the library is updated, you would have to rebuild all the applications.
@@ -101,18 +101,26 @@ The application accesses the Stronghold API and retrieves the secret over HTTPS 
 
 When creating pods that request CSI volumes, the CSI secret vault driver sends a request to the Vault CSI. The Vault CSI then uses the specified SecretProviderClass and ServiceAccount of the pod to retrieve the secrets from the vault and mount them in the pod volume.
 
-#### Environment variable injection:
+#### Environment variable injection
 
-If there is no way to change the application code, you can implement secure secret injection as an environment variable that the application can use. To do so, read all the files mounted by the CSI into the container and define the environment variables so that their names correspond to the file names and values correspond to the file contents. After that, run the application. Refer to the Bash example below.
+If there is no way to change the application code, you can implement secure secret injection as an environment variable that the application can use.
+
+To do so:
+
+- Read all the files mounted by the CSI into the container.
+- Define the environment variables so that their names correspond to the file names and values correspond to the file contents.
+- Run the application.
+
+Refer to the bash example:
 
 ```bash
 bash -c "for file in $(ls /mnt/secrets); do export  $file=$(cat /mnt/secrets/$file); done ; exec my_original_file_to_startup"
 ```
 
-#### Pros:
+Pros:
 
 - Only two containers, whose resource requirements are known in advance, are required on each node to deliver secrets to applications.
-- Creating SecretsStore/SecretProviderClass resources reduces the amount of repetitive code compared to other vault agent implementations.
+- Creating SecretsStore/SecretProviderClass resources reduces the amount of repetitive code compared to other Vault Agent implementations.
 - If necessary, you can create a Kubernetes secret that is a copy of the secret retrieved from the vault.
 - The secret is retrieved from the vault by the CSI driver at the container creation stage. This means that pods will be started only after the secrets are read from the vault and written to the container volume.
 
@@ -124,27 +132,28 @@ Environment variables are propagated into the container at application startup. 
 
 ### Option #4: Delivering secrets using Kubernetes mechanisms
 
-> *Status:* not secure; not recommended for use. No support is available. It may be implemented in the future..
+> *Status:* not secure; not recommended for use. No support is available. It may be implemented in the future.
 
 This integration method relies on the Kubernetes secrets operator with a set of CRDs for synchronizing secrets from Vault to the Kubernetes secrets.
 
-#### Pros:
+Pros:
 
-- This is the traditional way of passing a secret to an application via environment variables - all you have to do is to hook up the Kubernetes secret.
+- This is the traditional way of passing a secret to an application via environment variables — all you have to do is to hook up the Kubernetes secret.
 
-#### Cons:
+Cons:
 
 - The secret is stored in both the secret store and the Kubernetes secret (which can be accessed via the Kubernetes API). The secret is also stored in etcd and can potentially be read on any cluster node or retrieved from an etcd backup. No option to avoid storing data in Kubernetes secrets is available.
 
-### For reference: vault-agent injector
+### For reference: Vault Agent injector
 
 > *Status:* no pros compared to the CSI mechanism. No support/implementation is available or in plans.
 
-When a pod is created, a mutation is run that adds a vault-agent container. The vault-agent retrieves the secrets from the secret store and puts them in a shared volume on a disk that can be accessed by the application.
+When a pod is created, a mutation is run that adds a Vault Agent container. The Vault Agent retrieves the secrets from the secret store and puts them in a shared volume on a disk that can be accessed by the application.
 
-#### Cons:
+Cons:
 
-- Each pod requires running a sidecar container, which consumes resources. Suppose there are 50 applications running in a cluster, each having 3 to 15 replicas. While the resource requirements of each sidecar are low, the numbers get noticeable when multiplied by the total number of containers: 50mcpu + 100Mi per sidecar means dozens of CPU cores and dozens of gigabytes of RAM.
+- Each pod requires running a sidecar container, which consumes resources.
 
+  Suppose there are 50 applications running in a cluster, each having 3 to 15 replicas. While the resource requirements of each sidecar are low, the numbers get noticeable when multiplied by the total number of containers: 50mcpu + 100Mi per sidecar means dozens of CPU cores and dozens of gigabytes of RAM.
 
-- Since metrics are collected from each container, this approach will produce twice as many container metrics. 
+- Since metrics are collected from each container, this approach will produce twice as many container metrics.

@@ -22,8 +22,10 @@ properties:
   connectionConfiguration:
     type: string
     description: |
-      DiscoverLocalStronghold for use internal cluster stronghold.
-      Manual for use external stronghold or vault.
+      Secret store connection mode:
+
+      - `DiscoverLocalStronghold`: For automatic connection to the internal Stronghold service in the cluster.
+      - `Manual`: For using an external Stronghold or Vault.
     enum: ["Manual", "DiscoverLocalStronghold"]
     default: "DiscoverLocalStronghold"
   connection:
@@ -33,23 +35,25 @@ properties:
         type: string
         pattern: ^https://[\.:0-9a-zA-Z-]+$
         description: |
-          Stronghold or Vault address
+          Stronghold or Vault address used for connecting integrations and retrieving secrets.
         x-examples: [ "https://vault.mycompany.com:8200" ]
       caCert:
         type: string
         pattern: "^-----BEGIN CERTIFICATE-----\n(.+\n){5}"
         description: |
-          Stronghold or Vault CA in PEM format
+          CA certificate in PEM format for connecting to Stronghold or Vault.
+
+          If this parameter is not specified, the system ca-certificates are used.
       authPath:
         type: string
         pattern: ^[A-Za-z0-9-_]+$
         default: kubernetes
         description: |
-          Kubernetes Mount Path
+          Path in Stronghold or Vault that is used to authenticate a Kubernetes cluster.
         x-examples: [ "kubernetes", "kube-dev" ]
       namespace:
         type: string
         pattern: ^[A-Za-z0-9-_\/]+$
         description: |
-          Namespace in Vault-compatible store
+          Namespace in a Vault-compatible store.
         x-examples: [ "ns1", "ns1/sub-ns2" ]
