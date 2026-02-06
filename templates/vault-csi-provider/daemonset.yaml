@@ -61,7 +61,7 @@ spec:
         - name: vault-csi-provider
           image: {{ include "helm_lib_module_image" (list . "vaultCsiProvider") }}
           imagePullPolicy: IfNotPresent
-          {{- include "helm_lib_module_container_security_context_read_only_root_filesystem" . | nindent 10 }}
+          {{- include "module_container_security_context_readonly_fs_flexible" (dict "uid" 0) | nindent 10 }}
           env:
           {{- if $VAULT_CACERT_BYTES }}
           - name: VAULT_CACERT_BYTES
