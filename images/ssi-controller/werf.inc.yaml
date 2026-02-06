@@ -21,7 +21,7 @@ git:
   - werf.inc.yaml
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: builder/golang-alpine
+fromImage: builder/golang-gost-alpine
 final: false
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact

@@ -19,7 +19,7 @@ shell:
     - git apply /src/patches/*.patch --verbose
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: builder/golang-alpine
+fromImage: builder/golang-gost-alpine
 final: false
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
@@ -34,7 +34,7 @@ shell:
   - export GOPROXY=$(cat /run/secrets/GOPROXY) GOOS=linux GOARCH=amd64 CGO_ENABLED=0
   - go build -ldflags="-s -w" -o /{{ .ImageName }}
   - chown 64535:64535 /{{ .ImageName }}
-  - chmod 0700 /{{ .ImageName }}
+  - chmod 0555 /{{ .ImageName }}
   - cd /
   - rm -rf /src
 secrets:
@@ -48,9 +48,9 @@ git:
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
   add: /{{ .ImageName }}
-  to: /{{ .ImageName }}
+  to: /bin/{{ .ImageName }}
   before: setup
 imageSpec:
   config:
     entrypoint:
-    - /{{ .ImageName }}
+    - /bin/{{ .ImageName }}
