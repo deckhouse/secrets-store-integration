@@ -27,6 +27,51 @@ spec:
   updatePolicy:
     updateMode: "Initial"
 {{- end }}
+{{- if or (.Values.global.discovery.apiVersions | has "deckhouse.io/v1alpha1/SecurityPolicyException") (.Capabilities.APIVersions.Has "deckhouse.io/v1alpha1/SecurityPolicyException") }}
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: SecurityPolicyException
+metadata:
+  name: ssi-controller
+  namespace: d8-{{ $.Chart.Name }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "ssi-controller")) | nindent 2 }}
+spec:
+  securityContext:
+    readOnlyRootFilesystem:
+      allowedValue: true
+      metadata:
+        description: |
+          Ensures the container's root filesystem is mounted read-only.
+    seccompProfile:
+      allowedValues:
+        - RuntimeDefault
+      metadata:
+        description: |
+          Uses the default seccomp profile from the container runtime for system call filtering.
+    runAsNonRoot:
+      allowedValue: true
+      metadata:
+        description: |
+          Container must run as a non-root user for security.
+    privileged:
+      allowedValue: false
+      metadata:
+        description: |
+          Controller does not require privileged mode.
+    capabilities:
+      allowedValues:
+        drop:
+          - ALL
+      metadata:
+        description: |
+          Drops all Linux capabilities to minimize the attack surface.
+    runAsUser:
+      allowedValues:
+      - 64535
+      metadata:
+        description: |
+          Runs as Deckhouse user (64535) for security isolation.
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -45,6 +90,7 @@ spec:
       labels:
         app: ssi-controller
         stronghold.deckhouse.io/mutate: skip
+        security.deckhouse.io/security-policy-exception: ssi-controller
     spec:
       serviceAccountName: ssi-controller
       automountServiceAccountToken: true
