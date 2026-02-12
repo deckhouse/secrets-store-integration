@@ -52,13 +52,89 @@ spec:
   updatePolicy:
     updateMode: "Initial"
 {{- end }}
+{{- if or (.Values.global.discovery.apiVersions | has "deckhouse.io/v1alpha1/SecurityPolicyException") (.Capabilities.APIVersions.Has "deckhouse.io/v1alpha1/SecurityPolicyException") }}
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: SecurityPolicyException
+metadata:
+  name: csi-secrets-store
+  namespace: d8-{{ $.Chart.Name }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store")) | nindent 2 }}
+spec:
+  securityContext:
+    readOnlyRootFilesystem:
+      allowedValue: true
+      metadata:
+        description: |
+          Ensures the container's root filesystem is mounted read-only.
+    allowPrivilegeEscalation:
+      allowedValue: true
+      metadata:
+        description: |
+          CSI driver requires privilege escalation to mount volumes into pods.
+    seccompProfile:
+      allowedValues:
+        - RuntimeDefault
+      metadata:
+        description: |
+          Uses the default seccomp profile from the container runtime for system call filtering.
+    runAsNonRoot:
+      allowedValue: false
+      metadata:
+        description: |
+          CSI driver may need to run as root to access host paths and mount volumes.
+    privileged:
+      allowedValue: true
+      metadata:
+        description: |
+          CSI node driver requires privileged mode to mount volumes on the host.
+    capabilities:
+      allowedValues:
+        drop:
+          - ALL
+      metadata:
+        description: |
+          Drops all Linux capabilities to minimize the attack surface.
+    runAsUser:
+      allowedValues:
+      - 0
+      - 64535
+      metadata:
+        description: |
+          Allows root (0) and Deckhouse user (64535) for different container requirements.
+  volumes:
+    types:
+      allowedValues:
+      - hostPath
+      metadata:
+        description: |
+          CSI driver requires hostPath volumes to interact with the kubelet and store plugin state.
+    hostPath:
+      allowedValues:
+        - path: "/var/lib/kubelet/pods"
+          metadata:
+            description: |
+              Required for accessing pod volumes to mount secrets.
+        - path: "/var/lib/kubelet/plugins_registry/"
+          metadata:
+            description: |
+              Required for registering the CSI driver with the kubelet.
+        - path: "/var/lib/kubelet/plugins/csi-secrets-store/"
+          metadata:
+            description: |
+              Required for storing CSI driver plugin state and socket.
+        - path: "/var/run/secrets-store-csi-providers"
+          metadata:
+            description: |
+              Required for communication with secrets store providers.
+{{- end }}
 ---
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: csi-secrets-store
   namespace: d8-{{ $.Chart.Name }}
-  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store" )) | nindent 2 }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "csi-secrets-store")) | nindent 2 }}
 spec:
   selector:
     matchLabels:
@@ -67,6 +143,7 @@ spec:
     metadata:
       labels:
         app: csi-secrets-store
+        security.deckhouse.io/security-policy-exception: csi-secrets-store
       annotations:
         kubectl.kubernetes.io/default-container: secrets-store
     spec:
@@ -185,7 +262,7 @@ spec:
               {{- include "csi_livenessprobe_resources" . | nindent 14 }}
             {{- end }}
         - name: kube-rbac-proxy
-          {{- include "module_container_security_context_readonly_fs_flexible" (dict "uid" 65534) | nindent 10 }}
+          {{- include "module_container_security_context_readonly_fs_flexible" (dict "uid" 64535) | nindent 10 }}
           image: {{ include "helm_lib_module_common_image" (list $ "kubeRbacProxy") }}
           args:
           - "--secure-listen-address=$(KUBE_RBAC_PROXY_LISTEN_ADDRESS):9889"

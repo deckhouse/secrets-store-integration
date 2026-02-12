@@ -33,13 +33,76 @@ spec:
   updatePolicy:
     updateMode: "Initial"
 {{- end }}
+{{- if or (.Values.global.discovery.apiVersions | has "deckhouse.io/v1alpha1/SecurityPolicyException") (.Capabilities.APIVersions.Has "deckhouse.io/v1alpha1/SecurityPolicyException") }}
+---
+apiVersion: deckhouse.io/v1alpha1
+kind: SecurityPolicyException
+metadata:
+  name: vault-csi-provider
+  namespace: d8-{{ $.Chart.Name }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider")) | nindent 2 }}
+spec:
+  securityContext:
+    readOnlyRootFilesystem:
+      allowedValue: true
+      metadata:
+        description: |
+          Ensures the container's root filesystem is mounted read-only.
+    allowPrivilegeEscalation:
+      allowedValue: false
+      metadata:
+        description: |
+          Vault CSI provider does not require privilege escalation.
+    seccompProfile:
+      allowedValues:
+        - RuntimeDefault
+      metadata:
+        description: |
+          Uses the default seccomp profile from the container runtime for system call filtering.
+    runAsNonRoot:
+      allowedValue: false
+      metadata:
+        description: |
+          Vault CSI provider runs as root to access the provider socket.
+    privileged:
+      allowedValue: false
+      metadata:
+        description: |
+          Vault CSI provider does not require privileged mode.
+    capabilities:
+      allowedValues:
+        drop:
+          - ALL
+      metadata:
+        description: |
+          Drops all Linux capabilities to minimize the attack surface.
+    runAsUser:
+      allowedValues:
+      - 0
+      metadata:
+        description: |
+          Runs as root (0) to access the provider socket directory.
+  volumes:
+    types:
+      allowedValues:
+      - hostPath
+      metadata:
+        description: |
+          Vault CSI provider requires hostPath volume to expose its gRPC socket.
+    hostPath:
+      allowedValues:
+        - path: "/var/run/secrets-store-csi-providers"
+          metadata:
+            description: |
+              Required for exposing the Vault CSI provider gRPC socket to the CSI driver.
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: vault-csi-provider
   namespace: d8-{{ $.Chart.Name }}
-  {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider" )) | nindent 2 }}
+  {{- include "helm_lib_module_labels" (list . (dict "app" "vault-csi-provider")) | nindent 2 }}
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -50,6 +113,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: vault-csi-provider
+        security.deckhouse.io/security-policy-exception: vault-csi-provider
     spec:
       serviceAccountName: vault-csi-provider
       automountServiceAccountToken: true
