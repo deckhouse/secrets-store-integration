@@ -1,7 +1,6 @@
 name: secrets-store-integration
 namespace: d8-secrets-store-integration
 stage: General Availability
-weight: 930
 descriptions:
   en: |
     Delivers secrets to the application pods in the Kubernetes cluster by mounting multiple secrets, keys, and certificates stored in external secret stores.
