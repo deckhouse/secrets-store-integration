@@ -143,6 +143,7 @@ spec:
           value: |
             {{- $VAULT_CACERT_BYTES | nindent 12 }}
         {{- end }}
+        {{- include "helm_lib_envs_for_proxy" . | nindent 8 }}
         ports:
         - containerPort: 8443
           name: https
