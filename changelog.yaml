@@ -1,4 +1,3 @@
 changes:
-- Using in-cluster HTTP_PROXY, HTTPS_PROXY, NO_PROXY environment variables to access registry from the webhook.
-- Updated base images to v0.5.60.
-- Fixed CVE-2026-24051
+- Updated base images to v0.5.62.
+- Fixed CVE-2025-15558
