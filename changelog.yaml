@@ -1,3 +1,2 @@
 changes:
-- Updated base images to v0.5.62.
-- Fixed CVE-2025-15558
+- Fixed CVE-2026-33186
