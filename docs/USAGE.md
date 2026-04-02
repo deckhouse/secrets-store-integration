@@ -1,6 +1,6 @@
 ---
-title: "The secrets-store-integration module: usage"
-description: Usage of the secrets-store-integration Deckhouse module.
+title: "Using secrets-store-integration"
+description: "How to configure and use the secrets-store-integration module with Stronghold and other Vault-compatible secret stores."
 ---
 
 ## Configuring the module to work with Deckhouse Stronghold
@@ -19,7 +19,7 @@ description: Usage of the secrets-store-integration Deckhouse module.
      version: 1
    ```
 
-   The [connectionConfiguration](configuration.html#parameters-connectionconfiguration) paramater is optional and set to `DiscoverLocalStronghold` value by default.
+   The [connectionConfiguration](configuration.html#parameters-connectionconfiguration) parameter is optional and set to `DiscoverLocalStronghold` by default.
 
 ## Configuring the module to work with the external secret store
 
@@ -129,7 +129,7 @@ Before the secret injection, prepare the test environment:
        ${VAULT_ADDR}/v1/demo-kv/data/myapp-secret
      ```
 
-1. If necessary, add an authentication path ([`authPath`](/modules/secrets-store-integration/configuration.html#parameters-connection-authpath)) for authentication and authorization to Stronghold using the Kubernetes API of the remote cluster.
+1. If necessary, add an authentication path ([`authPath`](configuration.html#parameters-connection-authpath)) for authentication and authorization to Stronghold using the Kubernetes API of the remote cluster.
 
    * By default, the authentication method named `kubernetes_local` is enabled and configured in Stronghold via Kubernetes API of the cluster on which Stronghold is running. If you need to configure access via remote clusters, set the authentication path (`authPath`) and enable authentication and authorization in Stronghold via Kubernetes API for each cluster:
 
@@ -251,13 +251,13 @@ Before the secret injection, prepare the test environment:
 
 ## Allowing a ServiceAccount to log in to Stronghold
 
-To log in to Stronghold, a pod uses a token generated for its ServiceAccount. In order for Stronghold to be able to check the validity of the ServiceAccount data, the Stronghold used by the service must have a permission to `get`, `list`, and `watch` for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` ClusterRole for this.
+To log in to Stronghold, a pod uses a token generated for its `ServiceAccount`. To verify the provided `ServiceAccount` data, the Stronghold instance used by the service must have permission to `get`, `list`, and `watch` the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` `ClusterRole` for this.
 
 Stronghold can use different credentials to make requests to the Kubernetes API:
 
-* A token of the application that is trying to log in to Stronghold. In this case, each service that logs in to Stronghold must have the `system:auth-delegator` ClusterRole (or the API permissions listed above) in the ServiceAccount it uses. Refer to examples in the [Stronghold documentation](https://deckhouse.io/products/stronghold/documentation/user/auth/kubernetes.html#use-the-stronghold-clients-jwt-as-the-reviewer-jwt).
+* A token of the application that is trying to log in to Stronghold. In this case, each service that logs in to Stronghold must have the `system:auth-delegator` `ClusterRole` (or the API permissions listed above) in the `ServiceAccount` it uses. Refer to examples in the [Stronghold documentation](/products/stronghold/documentation/user/auth/kubernetes.html#use-the-stronghold-clients-jwt-as-the-reviewer-jwt).
 
-* A static token created specifically for Stronghold ServiceAccount that has the necessary permissions. Setting up Stronghold for this case is described in detail in the [Stronghold documentation](https://deckhouse.io/products/stronghold/documentation/user/auth/kubernetes.html#continue-using-long-lived-tokens).
+* A static token created specifically for the Stronghold `ServiceAccount` that has the necessary permissions. Setting up Stronghold for this case is described in detail in the [Stronghold documentation](/products/stronghold/documentation/user/auth/kubernetes.html#continue-using-long-lived-tokens).
 
 ## Injecting environment variables
 
@@ -421,7 +421,7 @@ The actual secrets from the Vault-compatible store will be injected at the appli
 
 ## Mounting a secret from the store as a file in a container
 
-Use the [SecretStoreImport](/modules/secrets-store-integration/cr.html#secretsstoreimport) custom resource to deliver secrets to the application.
+Use the [SecretsStoreImport](cr.html#secretsstoreimport) custom resource to deliver secrets to the application.
 
 In this example, you will be using the ServiceAccount `myapp-sa` and namespace `myapp-namespace` that were created earlier when you [set up the test environment](#setting-up-the-test-environment).
 
@@ -455,7 +455,6 @@ In this example, you will be using the ServiceAccount `myapp-sa` and namespace `
      serviceAccountName: myapp-sa
      containers:
      - image: alpine:3.20
-       name: myapp
        command:
        - sh
        - -c
@@ -503,7 +502,7 @@ Example:
    d8 stronghold kv put demo-kv/myapp-secret keytab=$(cat /path/to/keytab_file | base64 -w0)
    ```
 
-1. Create a [SecretsStoreImport](/modules/secrets-store-integration/cr.html#secretsstoreimport) manifest including the parameter required to decode the file:
+1. Create a [SecretsStoreImport](cr.html#secretsstoreimport) manifest including the parameter required to decode the file:
 
    ```yaml
    apiVersion: deckhouse.io/v1alpha1
@@ -526,7 +525,7 @@ Example:
 
 ### The autorotation feature
 
-The autorotation feature of the `secret-store-integration` module is enabled by default. Every two minutes, the module polls Stronghold and synchronizes the secrets in the mounted file if it has been changed.
+The autorotation feature of the `secrets-store-integration` module is enabled by default. Every two minutes, the module polls Stronghold and synchronizes the secret in the mounted file if it has changed.
 
 There are two ways to keep track of changes to the secret file in the pod:
 
@@ -535,7 +534,7 @@ There are two ways to keep track of changes to the secret file in the pod:
 
 The following is an example of using inotify in a Python application leveraging the inotify Python package:
 
-```python
+```go
 #!/usr/bin/python3
 
 import inotify.adapters
@@ -598,4 +597,4 @@ Files with secrets will not be rotated if `subPath` is used.
 
 Deckhouse CLI (`d8`) is a multipurpose tool that is required to run commands like `d8 stronghold` from the terminal.
 
-To install `d8`, use one of the options described in the [CLI tool documentation](/products/kubernetes-platform/documentation/latest/cli/d8/#installing-the-executable).
+To install `d8`, use one of the options described in the [CLI tool documentation](/products/kubernetes-platform/documentation/v1/cli/d8/#installing-the-executable).
