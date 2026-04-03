@@ -3,157 +3,98 @@ title: "The secrets-store-integration module"
 description: "The secrets-store-integration module integrates secret stores and applications in K8s clusters"
 ---
 
-The `secrets-store-integration` module delivers secrets to the application pods in the Kubernetes
-cluster by mounting multiple secrets, keys, and certificates stored in external secret stores.
+The `secrets-store-integration` module delivers secrets to applications in Kubernetes clusters.
 
-Secrets are mounted into pods as volumes using the CSI driver implementation.
-Note that secret stores must be compatible with the HashiCorp Vault API.
+It allows applications to receive secrets from an external secret store compatible with the HashiCorp Vault API.
 
-## Delivering secrets to applications
+Secrets can be delivered to an application in different ways. To avoid mixing different concepts, this documentation separates them into three levels:
 
-There are several ways to deliver secrets to an application from a Vault-compatible storage:
+- **architectural model**: who retrieves the secret from the external store;
+- **delivery form**: how the application reads the secret;
+- **implementation mechanism**: how this is implemented in Kubernetes.
 
-1. Your application itself can access the vault.
+This distinction matters because an application, CSI, entrypoint injection, and environment variables are not entities of the same level.
 
-   > This is the most secure option, but it requires an application to be modified.
+## Architectural models
 
-2. An intermediate application retrieves secrets from the vault, and your application retrieves secrets from files created in the container.
+### The application retrieves the secret itself
 
-   > Use this option if you cannot modify the application for some reason. It is less secure because the secrets are stored in files in the container. However, it is easier to implement.
+In this scenario, the application talks to the external store directly and gets the secret without any intermediate storage in Kubernetes.
 
-3. An intermediate application retrieves secrets from the vault, and your application accesses the secrets as the environment variables.
+This is the most secure option. It is the recommended approach if the application can be modified.
 
-   > If reading from files is unavailable, you can opt for this alternative. Keep in mind, however, that it is NOT secure, because the secret data is stored in Kubernetes (and etcd, so it can potentially be read on any node in the cluster).
+### The platform delivers the secret to the application through a file
 
-<table>
-<thead>
-<tr>
-<th>How secrets are being delivered</th>
-<th>Resources consumption</th>
-<th>How your application gets the data</th>
-<th>Where the secret is stored in the Kubernetes</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a style="color: ##0066FF;" href="#option-1-get-the-secrets-from-the-app-itself">App</a></td>
-<td>No changes</td>
-<td>Directly from the secrets store</td>
-<td>Not stored</td>
-<td>Implemented</td>
-</tr>
-<tr>
-<td><a style="color: ##0066FF;" href="#csi-interface">CSI Interface</a></td>
-<td>Two pods per node (DaemonSet)</td>
-<td><ul><li>From the disk volume (as a file)</li><li>From the environment variable</li></ul></td>
-<td>Not stored</td>
-<td>Implemented</td>
-</tr>
-<tr>
-<td><a style="color: ##0066FF;" href="#option-3-entrypoint-injection">Entrypoint injection</a></td>
-<td>One app for the whole cluster (Deployment)</td>
-<td>Secrets are delivered as environment variables at application startup</td>
-<td>Not stored</td>
-<td>Implemented</td>
-</tr>
-<tr>
-<td><a style="color: ##0066FF;" href="#option-4-delivering-secrets-through-kubernetes-mechanisms">Kubernetes Secrets</a></td>
-<td>One app for the whole cluster (Deployment)</td>
-<td><ul><li>From the disk volume (as a file)</li><li>From the environment variable</li></ul></td>
-<td>Stored as a Kubernetes Secret</td>
-<td>Planned for implementation and release</td>
-</tr>
-<tr>
-<td><a style="color: #A9A9A9; font-style: italic;" href="#for-reference-vault-agent-injector">Vault Agent Injector</a></td>
-<td style="color: #A9A9A9; font-style: italic;">One agent per pod (sidecar)</td>
-<td style="color: #A9A9A9; font-style: italic;">From the disk volume (as a file)</td>
-<td style="color: #A9A9A9; font-style: italic;">Not stored</td>
-<td style="color: #A9A9A9; font-style: italic;"><sup><b>*</b></sup>No implementation plans</td>
-</tr>
-</tbody>
-</table>
+In this scenario, an infrastructure component retrieves the secret, and the application reads it from a file mounted into the container.
 
-<i><sup>*</sup>No implementation plans. There are no advantages over the CSI interface.</i>
+The main implementation mechanism is CSI. In the module comparison table, this is the scenario where the application reads data from a disk volume and the secret is not stored in Kubernetes.
 
-### Option #1: Getting the secrets using the app itself
+### The platform delivers the secret to the application through environment variables
 
-> *Status:* the most secure option. Recommended if you can access the application and modify it.
+In this scenario, an infrastructure component retrieves the secret, and the application sees it as an environment variable.
 
-The application accesses the Stronghold API and retrieves the secret over HTTPS using the SA authorization token.
+One implemented approach is entrypoint injection: secrets are delivered from the store at application startup as environment variables, and they are not stored in Kubernetes.
 
-Pros:
+## Secret delivery forms
 
-- The secret received by the application is not stored anywhere other than the application itself. There is no danger that it will be compromised during the transmission.
+### Via a file
 
-Cons:
+The application reads the secret from a file in a mounted volume.
 
-- The application will need to be modified for it to work with Stronghold.
-- You would have to re-implement secret access in each application, and if the library is updated, you would have to rebuild all the applications.
-- The application must support TLS and certificate validation.
-- No caching is available. When the application restarts, it will have to re-request the secret straight from the storage.
+This scenario is implemented through CSI. The CSI driver retrieves the secret from the store during container creation, so Pod startup is blocked until the secrets are read from the store and written to the volume.
 
-### Option #2: Delivering secrets using files
+### Via environment variables
 
-#### CSI interface
+The application reads the secret from environment variables.
 
-> *Status:* secure option. Recommended if you cannot make changes to the application.
+This uses the injector: if a Pod has the `secrets-store.deckhouse.io/role` annotation, the mutating webhook modifies the Pod manifest, adds an init container, and replaces the container startup command with the injector. The injector retrieves secrets from a Vault-compatible store, puts them into the process `ENV`, and then starts the original command through `execve`.
 
-When creating pods that request CSI volumes, the CSI secret vault driver sends a request to the Vault CSI. The Vault CSI then uses the specified SecretProviderClass and ServiceAccount of the pod to retrieve the secrets from the vault and mount them in the pod volume.
+If a container does not define a startup command in its manifest, the command is taken from the image manifest in the registry.
 
-#### Environment variable injection
+## Implementation mechanisms
 
-If there is no way to change the application code, you can implement secure secret injection as an environment variable that the application can use.
+### CSI
 
-To do so:
+CSI is the primary mechanism for delivering secrets as files.
 
-- Read all the files mounted by the CSI into the container.
-- Define the environment variables so that their names correspond to the file names and values correspond to the file contents.
-- Run the application.
+For the CSI scenario:
 
-Refer to the bash example:
+- the application reads the secret from a disk volume as a file;
+- the secret is not stored in Kubernetes;
+- Pod startup depends on successfully reading the secret and writing it to the volume.
 
-```bash
-bash -c "for file in $(ls /mnt/secrets); do export  $file=$(cat /mnt/secrets/$file); done ; exec my_original_file_to_startup"
-```
+### Entrypoint injection
 
-Pros:
+Entrypoint injection is a mechanism for delivering secrets into environment variables at application startup.
 
-- Only two containers, whose resource requirements are known in advance, are required on each node to deliver secrets to applications.
-- Creating SecretsStore/SecretProviderClass resources reduces the amount of repetitive code compared to other Vault Agent implementations.
-- If necessary, you can create a Kubernetes secret that is a copy of the secret retrieved from the vault.
-- The secret is retrieved from the vault by the CSI driver at the container creation stage. This means that pods will be started only after the secrets are read from the vault and written to the container volume.
+From the application's point of view, this is a separate scenario of consuming a secret through `ENV`, not through a file.
 
-### Option №3: Entrypoint injection
+### Environment variable injector
 
-#### Delivering environment variables into the container through entrypoint injection
+The environment variable injector is the technical mechanism that implements delivery into `ENV` through a mutating webhook, an init container, and launching the original command with `execve`.
 
-Environment variables are propagated into the container at application startup. They are stored in RAM only. At first, variables will be delivered via the entrypoint injection into the container. In the future, we plan to integrate the secrets delivery mechanism into containerd.
+If both of the following are used at the same time:
 
-### Option #4: Delivering secrets using Kubernetes mechanisms
+- the `secrets-store.deckhouse.io/env-from-path` annotation;
+- and an explicitly defined environment variable with the same name,
 
-> *Status:* not secure; not recommended for use. No support is available. It may be implemented in the future.
+the value from the `env-from-path` annotation takes precedence.
 
-This integration method relies on the Kubernetes secrets operator with a set of CRDs for synchronizing secrets from Vault to the Kubernetes secrets.
+## Scenario comparison
 
-Pros:
+| Architectural model | Implementation mechanism | How the application gets the data | Where it is stored in Kubernetes | Resource consumption | Status |
+| --- | --- | --- | --- | --- | --- |
+| The application retrieves the secret itself | Direct application access | Directly from the secret store | Not stored | Unchanged | Implemented |
+| The platform delivers the secret through a file | CSI | From a disk volume (as a file) | Not stored | Two pods on each node (DaemonSet) | Implemented |
+| The platform delivers the secret through environment variables | Entrypoint injection | Secrets are delivered from the store at application startup as environment variables | Not stored | One pod on each node (DaemonSet) | Implemented |
 
-- This is the traditional way of passing a secret to an application via environment variables — all you have to do is to hook up the Kubernetes secret.
+## What to consider when choosing
 
-Cons:
+- If the application can be modified, direct application access to the store is preferred as the most secure option.
+- If the application can read secrets from files, use delivery through CSI.
+- If the application cannot be changed and requires environment variables, use environment variable injection.
 
-- The secret is stored in both the secret store and the Kubernetes secret (which can be accessed via the Kubernetes API). The secret is also stored in etcd and can potentially be read on any cluster node or retrieved from an etcd backup. No option to avoid storing data in Kubernetes secrets is available.
+## Limitations and specifics
 
-### For reference: Vault Agent injector
-
-> *Status:* no pros compared to the CSI mechanism. No support/implementation is available or in plans.
-
-When a pod is created, a mutation is run that adds a Vault Agent container. The Vault Agent retrieves the secrets from the secret store and puts them in a shared volume on a disk that can be accessed by the application.
-
-Cons:
-
-- Each pod requires running a sidecar container, which consumes resources.
-
-  Suppose there are 50 applications running in a cluster, each having 3 to 15 replicas. While the resource requirements of each sidecar are low, the numbers get noticeable when multiplied by the total number of containers: 50mcpu + 100Mi per sidecar means dozens of CPU cores and dozens of gigabytes of RAM.
-
-- Since metrics are collected from each container, this approach will produce twice as many container metrics.
+- When CSI is used, Pod startup is blocked until secrets are read from the store and written to the volume.
+- In approaches that use additional containers, the number of container metrics increases because metrics are collected from every container.
