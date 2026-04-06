@@ -7,6 +7,15 @@ The `secrets-store-integration` module delivers secrets to applications in Kuber
 
 It allows applications to receive secrets from an external secret store compatible with the HashiCorp Vault API.
 
+## Main Features
+
+- Delivers secrets to pods as mounted files or environment variables without storing them in Kubernetes.
+- Supports automatic connection to the internal Deckhouse Stronghold instance with zero manual configuration (`DiscoverLocalStronghold` mode).
+- Works with any Vault-compatible secret store in `Manual` mode.
+- Automatically rotates mounted secrets every two minutes when the value in the store changes.
+- Provides entrypoint injection for applications that cannot be modified to read secrets directly from the store.
+- Supports Base64-encoded binary secrets (e.g. JKS keystores, Kerberos keytab files) with automatic decoding on delivery.
+
 Secrets can be delivered to an application in different ways. To avoid mixing different concepts, this documentation separates them into three levels:
 
 - **architectural model**: who retrieves the secret from the external store;

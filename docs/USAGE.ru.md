@@ -1,5 +1,5 @@
 ---
-title: "The secrets-store-integration module: примеры"
+title: "Модуль secrets-store-integration: примеры"
 description: Использование модуля secrets-store-integration.
 ---
 
@@ -135,7 +135,7 @@ export VAULT_ADDR=https://secretstoreexample.com
        ${VAULT_ADDR}/v1/demo-kv/data/myapp-secret
      ```
 
-1. При необходимости добавьте путь аутентификации ([`authPath`](/modules/secrets-store-integration/configuration.html#parameters-connection-authpath)) для аутентификации и авторизации в Stronghold с помощью Kubernetes API удаленного кластера.
+1. При необходимости добавьте путь аутентификации ([`authPath`](configuration.html#parameters-connection-authpath)) для аутентификации и авторизации в Stronghold с помощью Kubernetes API удаленного кластера.
 
    * По умолчанию в Stronghold включен и настроен под именем `kubernetes_local` метод аутентификации через Kubernetes API кластера, на котором запущен сам Stronghold. Если требуется настроить доступ через удаленные кластеры, задайте путь (`authPath`) и включите аутентификацию и авторизацию в Stronghold с помощью Kubernetes API для каждого кластера:
 
@@ -441,7 +441,7 @@ envFrom:
 
 ## Монтирование секрета из хранилища в качестве файла в контейнер
 
-Для доставки секретов в приложение используйте кастомный [ресурс SecretsStoreImport](/modules/secrets-store-integration/cr.html#secretsstoreimport).
+Для доставки секретов в приложение используйте кастомный [ресурс SecretsStoreImport](cr.html#secretsstoreimport).
 
 В этом примере используются сервисный аккаунт `myapp-sa` и пространство имен `myapp-namespace`, созданные на этапе [подготовки тестового окружения](#подготовка-тестового-окружения).
 
@@ -524,7 +524,7 @@ envFrom:
    d8 stronghold kv put demo-kv/myapp-secret keytab=$(cat /path/to/keytab_file | base64 -w0)
    ```
 
-1. Создайте манифест [SecretsStoreImport](/modules/secrets-store-integration/cr.html#secretsstoreimport), указав параметр для раскодирования файла:
+1. Создайте манифест [SecretsStoreImport](cr.html#secretsstoreimport), указав параметр для раскодирования файла:
 
    ```yaml
    apiVersion: deckhouse.io/v1alpha1
@@ -547,7 +547,7 @@ envFrom:
 
 ## Функция авторотации
 
-Функция авторотации секретов в модуле `secret-store-integration` включена по умолчанию. Каждые две минуты модуль опрашивает Stronghold и синхронизирует секреты в примонтированном файле в случае их изменения.
+Функция авторотации секретов в модуле `secrets-store-integration` включена по умолчанию. Каждые две минуты модуль опрашивает Stronghold и синхронизирует секреты в примонтированном файле в случае их изменения.
 
 Существует два способа отслеживания изменений файла с секретом в Pod:
 

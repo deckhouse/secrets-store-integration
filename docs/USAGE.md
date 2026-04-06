@@ -9,7 +9,7 @@ This section contains usage examples for the `secrets-store-integration` module.
 
 Deckhouse CLI (`d8`) is a universal tool required to run commands such as `d8 stronghold` in the terminal.
 
-To install `d8`, use one of the methods described in the [CLI tool documentation](/products/kubernetes-platform/documentation/latest/cli/d8/#installing-the-executable).
+To install `d8`, use one of the methods described in the [CLI tool documentation](/products/kubernetes-platform/documentation/v1/cli/d8/#installing-the-executable).
 
 ## Configuring the module to work with Deckhouse Stronghold
 
@@ -135,7 +135,7 @@ Before injecting secrets, prepare a test environment.
        ${VAULT_ADDR}/v1/demo-kv/data/myapp-secret
      ```
 
-1. If necessary, add an authentication path ([`authPath`](/modules/secrets-store-integration/configuration.html#parameters-connection-authpath)) for authentication and authorization in Stronghold using the Kubernetes API of a remote cluster.
+1. If necessary, add an authentication path ([`authPath`](configuration.html#parameters-connection-authpath)) for authentication and authorization in Stronghold using the Kubernetes API of a remote cluster.
 
    * By default, Stronghold enables and configures the Kubernetes authentication method under the name `kubernetes_local` for the cluster where Stronghold itself is running. If you need to configure access through remote clusters, set the authentication path (`authPath`) and enable authentication and authorization in Stronghold through the Kubernetes API for each cluster:
 
@@ -441,7 +441,7 @@ In this scenario, all keys from a single secret are imported.
 
 ## Mounting a secret from the store as a file into a container
 
-Use the [SecretsStoreImport](/modules/secrets-store-integration/cr.html#secretsstoreimport) custom resource to deliver secrets to the application.
+Use the [SecretsStoreImport](cr.html#secretsstoreimport) custom resource to deliver secrets to the application.
 
 This example uses the `myapp-sa` service account and the `myapp-namespace` namespace created during [test environment preparation](#preparing-a-test-environment).
 
@@ -524,7 +524,7 @@ Example:
    d8 stronghold kv put demo-kv/myapp-secret keytab=$(cat /path/to/keytab_file | base64 -w0)
    ```
 
-1. Create a [SecretsStoreImport](/modules/secrets-store-integration/cr.html#secretsstoreimport) manifest with the decoding parameter set:
+1. Create a [SecretsStoreImport](cr.html#secretsstoreimport) manifest with the decoding parameter set:
 
    ```yaml
    apiVersion: deckhouse.io/v1alpha1
@@ -547,7 +547,7 @@ Example:
 
 ## Autorotation feature
 
-The autorotation feature in the `secret-store-integration` module is enabled by default. Every two minutes, the module polls Stronghold and synchronizes secrets in the mounted file if they have changed.
+The autorotation feature in the `secrets-store-integration` module is enabled by default. Every two minutes, the module polls Stronghold and synchronizes secrets in the mounted file if they have changed.
 
 There are two ways to track changes to the secret file in a Pod:
 
