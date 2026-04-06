@@ -26,17 +26,17 @@ This distinction matters because an application, CSI, entrypoint injection, and 
 
 ## Architectural models
 
-### The application retrieves the secret itself
+### Application retrieves the secret itself
 
-In this scenario, the application talks to the external store directly and gets the secret without any intermediate storage in Kubernetes.
+In this scenario, the application addresses the external store directly and gets the secret without any intermediate storage in Kubernetes.
 
 This is the most secure option. It is the recommended approach if the application can be modified.
 
-### The platform delivers the secret to the application through a file
+### Platform delivers the secret to the application through a file
 
 In this scenario, an infrastructure component retrieves the secret, and the application reads it from a file mounted into the container.
 
-The main implementation mechanism is CSI. In the module comparison table, this is the scenario where the application reads data from a disk volume and the secret is not stored in Kubernetes.
+The main implementation mechanism is CSI. In the [comparison table](#scenario-comparison), this is the scenario where the application reads data from a disk volume and the secret is not stored in Kubernetes.
 
 ### The platform delivers the secret to the application through environment variables
 
@@ -50,13 +50,13 @@ One implemented approach is entrypoint injection: secrets are delivered from the
 
 The application reads the secret from a file in a mounted volume.
 
-This scenario is implemented through CSI. The CSI driver retrieves the secret from the store during container creation, so Pod startup is blocked until the secrets are read from the store and written to the volume.
+This scenario is implemented through CSI. The CSI driver retrieves the secret from the store during container creation, so pod startup is blocked until the secrets are read from the store and written to the volume.
 
 ### Via environment variables
 
 The application reads the secret from environment variables.
 
-This uses the injector: if a Pod has the `secrets-store.deckhouse.io/role` annotation, the mutating webhook modifies the Pod manifest, adds an init container, and replaces the container startup command with the injector. The injector retrieves secrets from a Vault-compatible store, puts them into the process `ENV`, and then starts the original command through `execve`.
+This uses the injector: if a pod has the `secrets-store.deckhouse.io/role` annotation, the mutating webhook modifies the pod manifest, adds an init container, and replaces the container startup command with the injector. The injector retrieves secrets from a Vault-compatible store, puts them into the process `ENV`, and then starts the original command through `execve`.
 
 If a container does not define a startup command in its manifest, the command is taken from the image manifest in the registry.
 
@@ -70,7 +70,7 @@ For the CSI scenario:
 
 - the application reads the secret from a disk volume as a file;
 - the secret is not stored in Kubernetes;
-- Pod startup depends on successfully reading the secret and writing it to the volume.
+- pod startup depends on successfully reading the secret and writing it to the volume.
 
 ### Entrypoint injection
 
@@ -105,5 +105,5 @@ the value from the `env-from-path` annotation takes precedence.
 
 ## Limitations and specifics
 
-- When CSI is used, Pod startup is blocked until secrets are read from the store and written to the volume.
+- When CSI is used, pod startup is blocked until secrets are read from the store and written to the volume.
 - In approaches that use additional containers, the number of container metrics increases because metrics are collected from every container.

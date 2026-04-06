@@ -26,7 +26,7 @@ To install `d8`, use one of the methods described in the [CLI tool documentation
      version: 1
    ```
 
-   You do not have to set the [connectionConfiguration](configuration.html#parameters-connectionconfiguration) parameter, because `DiscoverLocalStronghold` is used by default.
+   You do not have to set the [`connectionConfiguration`](configuration.html#parameters-connectionconfiguration) parameter, because `DiscoverLocalStronghold` is used by default.
 
 ## Configuring the module to work with an external store
 
@@ -81,8 +81,8 @@ export VAULT_ADDR=https://secretstoreexample.com
 {{< alert level="info">}}
 This section contains two variants of example commands:
 
-- commands using the [`d8` CLI tool](#cli-tool-d8-for-stronghold-commands);
-- commands using `curl` to make direct requests to the secret store API.
+- Commands using the [`d8` CLI tool](#cli-tool-d8-for-stronghold-commands)
+- Commands using `curl` to make direct requests to the secret store API
 {{< /alert >}}
 
 Before injecting secrets, prepare a test environment.
@@ -273,12 +273,12 @@ When the module is enabled, a `mutating-webhook` appears in the cluster. If a Po
 
 In the modified Pod:
 
-1. an init container is added;
-1. the init container copies a statically linked injector binary from the service image into a temporary directory shared by all containers in the Pod;
-1. in the remaining containers, the original startup commands are replaced with a command that launches the injector binary;
-1. the injector retrieves the required data from a Vault-compatible store using the application's service account;
-1. it puts these variables into the process `ENV`;
-1. it performs the `execve` system call and starts the original command.
+1. An init container is added.
+1. The init container copies a statically linked injector binary from the service image into a temporary directory shared by all containers in the Pod.
+1. In the remaining containers, the original startup commands are replaced with a command that launches the injector binary.
+1. The injector retrieves the required data from a Vault-compatible store using the application's service account.
+1. It puts these variables into the process `ENV`.
+1. It performs the `execve` system call and starts the original command.
 
 If a container does not define a startup command in the Pod manifest, the image manifest is fetched from the registry and the command is taken from it.
 
@@ -509,8 +509,8 @@ This example uses the `myapp-sa` service account and the `myapp-namespace` names
 
 In some cases, you may need to deliver a binary file into a container, for example:
 
-- a JKS keystore;
-- a `keytab` for Kerberos authentication.
+- A JKS keystore
+- A `keytab` for Kerberos authentication
 
 In this case, you can encode the binary file as Base64 and place it into the secret store. When retrieved, the CSI driver decodes the data and places the binary file into the container. To do this, set `decodeBase64` to `true` for the corresponding file.
 
