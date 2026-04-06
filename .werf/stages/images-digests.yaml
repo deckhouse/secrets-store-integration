@@ -21,6 +21,9 @@ import:
 - image: tools/jq
   add: /usr/bin/jq
   before: install
+git:
+- add: /module.yaml
+  to: /module.yaml
 dependencies:
 {{- range $ImageID := $ImagesIDList }}
   {{- $ImageNameCamel  := $ImageID | splitList "/" | last  | camelcase | untitle }}
