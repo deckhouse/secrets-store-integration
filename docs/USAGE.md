@@ -193,12 +193,12 @@ Before injecting secrets, prepare a test environment.
 1. Create a role in Stronghold for the `myapp-sa` service account in the `myapp-namespace` namespace and bind the policy created earlier to it.
 
    {{< alert level="danger">}}
-   In addition to the Stronghold-side configuration, you must configure authorization permissions for the `ServiceAccount` objects used in the Kubernetes cluster.
+   In addition to the Stronghold-side configuration, you must configure authorization permissions for the ServiceAccount objects used in the Kubernetes cluster.
 
    See the required settings in the [next section](#how-to-allow-a-serviceaccount-to-authenticate-in-stronghold).
    {{< /alert >}}
 
-   * Create a role consisting of the namespace and policy name. Bind it to the `myapp-sa` `ServiceAccount` in the `myapp-namespace` namespace and to the `myapp-ro-policy` policy:
+   * Create a role consisting of the namespace and policy name. Bind it to the `myapp-sa` ServiceAccount in the `myapp-namespace` namespace and to the `myapp-ro-policy` policy:
 
      {{< alert level="info">}}
      The recommended TTL value for the Kubernetes token is `10m`.
@@ -242,7 +242,7 @@ Before injecting secrets, prepare a test environment.
        ${VAULT_ADDR}/v1/auth/remote-kube-1/role/myapp-role
      ```
 
-   These settings allow any Pod in the `myapp-namespace` namespace in both Kubernetes clusters that uses the `myapp-sa` `ServiceAccount` to authenticate and authorize in Stronghold to read secrets according to the `myapp-ro-policy` policy.
+   These settings allow any pod in the `myapp-namespace` namespace in both Kubernetes clusters that uses the `myapp-sa` ServiceAccount to authenticate and authorize in Stronghold to read secrets according to the `myapp-ro-policy` policy.
 
 1. Create the `myapp-namespace` namespace in the cluster:
 
@@ -256,33 +256,33 @@ Before injecting secrets, prepare a test environment.
    d8 k -n myapp-namespace create serviceaccount myapp-sa
    ```
 
-## How to allow a `ServiceAccount` to authenticate in Stronghold
+## How to allow a ServiceAccount to authenticate in Stronghold
 
-To authenticate in Stronghold, a Pod uses the token generated for its `ServiceAccount`. For Stronghold to validate the provided `ServiceAccount` data, the Stronghold service must have `get`, `list`, and `watch` permissions for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` `ClusterRole` for this.
+To authenticate in Stronghold, a pod uses the token generated for its ServiceAccount. For Stronghold to validate the provided ServiceAccount data, the Stronghold service must have `get`, `list`, and `watch` permissions for the `tokenreviews.authentication.k8s.io` and `subjectaccessreviews.authorization.k8s.io` endpoints. You can also use the `system:auth-delegator` ClusterRole for this.
 
 Stronghold can use different credentials to send requests to the Kubernetes API:
 
-- A token of the application that is trying to authenticate in Stronghold. In this case, every service authenticating in Stronghold requires the `system:auth-delegator` `ClusterRole` or the API permissions listed above on the `ServiceAccount` it uses. See the example in the [Stronghold documentation](https://deckhouse.io/products/stronghold/documentation/user/auth/kubernetes.html#use-the-stronghold-clients-jwt-as-the-reviewer-jwt).
-- A static token of a `ServiceAccount` created specifically for Stronghold and granted the necessary permissions. Configuring Stronghold for this case is described in detail in the [Stronghold documentation](https://deckhouse.io/products/stronghold/documentation/user/auth/kubernetes.html#continue-using-long-lived-tokens).
+- A token of the application that is trying to authenticate in Stronghold. In this case, every service authenticating in Stronghold requires the `system:auth-delegator` ClusterRole or the API permissions listed above on the ServiceAccount it uses. See the example in the [Stronghold documentation](https://deckhouse.io/products/stronghold/documentation/user/auth/kubernetes.html#use-the-stronghold-clients-jwt-as-the-reviewer-jwt).
+- A static token of a ServiceAccount created specifically for Stronghold and granted the necessary permissions. Configuring Stronghold for this case is described in detail in the [Stronghold documentation](https://deckhouse.io/products/stronghold/documentation/user/auth/kubernetes.html#continue-using-long-lived-tokens).
 
 ## Injecting environment variables
 
 ### How injection works
 
-When the module is enabled, a `mutating-webhook` appears in the cluster. If a Pod has the `secrets-store.deckhouse.io/role` annotation, the webhook modifies the Pod manifest by adding the injector.
+When the module is enabled, a `mutating-webhook` appears in the cluster. If a pod has the `secrets-store.deckhouse.io/role` annotation, the webhook modifies the pod manifest by adding the injector.
 
-In the modified Pod:
+In the modified pod:
 
 1. An init container is added.
-1. The init container copies a statically linked injector binary from the service image into a temporary directory shared by all containers in the Pod.
+1. The init container copies a statically linked injector binary from the service image into a temporary directory shared by all containers in the pod.
 1. In the remaining containers, the original startup commands are replaced with a command that launches the injector binary.
 1. The injector retrieves the required data from a Vault-compatible store using the application's service account.
 1. It puts these variables into the process `ENV`.
 1. It performs the `execve` system call and starts the original command.
 
-If a container does not define a startup command in the Pod manifest, the image manifest is fetched from the registry and the command is taken from it.
+If a container does not define a startup command in the pod manifest, the image manifest is fetched from the registry and the command is taken from it.
 
-Credentials from `imagePullSecrets` specified in the Pod manifest are used to retrieve the manifest from a private image registry.
+Credentials from `imagePullSecrets` specified in the pod manifest are used to retrieve the manifest from a private image registry.
 
 ### Injector annotations
 
@@ -307,7 +307,7 @@ The following annotations are available to modify injector behavior:
 | `secrets-store.deckhouse.io/enable-json-log` | `false` | Enables JSON log output |
 | `secrets-store.deckhouse.io/skip-mutate-containers` | | Space-separated list of container names that will not be mutated |
 
-Using the injector, you can specify templates in Pod manifests instead of actual `env` values. They are replaced with values from the store at container startup time.
+Using the injector, you can specify templates in pod manifests instead of actual `env` values. They are replaced with values from the store at container startup time.
 
 {{< alert level="info">}}
 Importing variables from a store path has higher priority than explicitly defined variables from the store. This means that if you use the `secrets-store.deckhouse.io/env-from-path` annotation with a path to a secret containing, for example, the `MY_SECRET` key, and also define an environment variable with the same name in the manifest:
@@ -337,7 +337,7 @@ env:
     value: secrets-store:demo-kv/data/myapp-secret#DB_PASS#4
 ```
 
-The template can also be stored in a `ConfigMap` or a `Secret` and connected using `envFrom`:
+The template can also be stored in a ConfigMap or a Secret and connected using `envFrom`:
 
 ```yaml
 envFrom:
@@ -347,13 +347,13 @@ envFrom:
       name: app-env
 ```
 
-Actual secrets from the Vault-compatible store are injected only at application startup. The `Secret` and `ConfigMap` objects contain templates.
+Actual secrets from the Vault-compatible store are injected only at application startup. The Secret and ConfigMap objects contain templates.
 
 ### Importing variables from a store path
 
 In this scenario, all keys from a single secret are imported.
 
-1. Create a Pod named `myapp1` that imports all variables from the store at `demo-kv/data/myapp-secret`:
+1. Create a pod named `myapp1` that imports all variables from the store at `demo-kv/data/myapp-secret`:
 
    ```yaml
    kind: Pod
@@ -381,13 +381,13 @@ In this scenario, all keys from a single secret are imported.
    d8 k create --filename myapp1.yaml
    ```
 
-1. Check the Pod logs after startup. The output should include all variables from `demo-kv/data/myapp-secret`:
+1. Check the pod logs after startup. The output should include all variables from `demo-kv/data/myapp-secret`:
 
    ```bash
    d8 k -n myapp-namespace logs myapp1
    ```
 
-1. Delete the Pod:
+1. Delete the pod:
 
    ```bash
    d8 k -n myapp-namespace delete pod myapp1 --force
@@ -395,7 +395,7 @@ In this scenario, all keys from a single secret are imported.
 
 ### Importing explicitly defined variables from the store
 
-1. Create a test Pod named `myapp2` that imports the required variables from the store using templates:
+1. Create a test pod named `myapp2` that imports the required variables from the store using templates:
 
    ```yaml
    kind: Pod
@@ -427,13 +427,13 @@ In this scenario, all keys from a single secret are imported.
    d8 k create --filename myapp2.yaml
    ```
 
-1. Check the Pod logs after startup. The output should include variables from `demo-kv/data/myapp-secret`:
+1. Check the pod logs after startup. The output should include variables from `demo-kv/data/myapp-secret`:
 
    ```bash
    d8 k -n myapp-namespace logs myapp2
    ```
 
-1. Delete the Pod:
+1. Delete the pod:
 
    ```bash
    d8 k -n myapp-namespace delete pod myapp2 --force
@@ -445,7 +445,7 @@ Use the [SecretsStoreImport](cr.html#secretsstoreimport) custom resource to deli
 
 This example uses the `myapp-sa` service account and the `myapp-namespace` namespace created during [test environment preparation](#preparing-a-test-environment).
 
-1. Create a `SecretsStoreImport` custom resource named `myapp-ssi` in the cluster:
+1. Create a SecretsStoreImport custom resource named `myapp-ssi` in the cluster:
 
    ```yaml
    apiVersion: deckhouse.io/v1alpha1
@@ -463,7 +463,7 @@ This example uses the `myapp-sa` service account and the `myapp-namespace` names
            key: "DB_PASS"
    ```
 
-1. Create a test Pod named `myapp3` in the cluster that mounts the secret from the store as a file:
+1. Create a test pod named `myapp3` in the cluster that mounts the secret from the store as a file:
 
    ```yaml
    kind: Pod
@@ -491,15 +491,15 @@ This example uses the `myapp-sa` service account and the `myapp-namespace` names
            secretsStoreImport: "myapp-ssi"
    ```
 
-   After these resources are applied, a Pod is created with a `backend` container. Inside the container filesystem, the `/mnt/secrets` directory contains the mounted `secrets` volume. This directory contains the `db-password` file with the database password (`DB_PASS`) from the Stronghold Key-Value store.
+   After these resources are applied, a pod is created with a `backend` container. Inside the container filesystem, the `/mnt/secrets` directory contains the mounted `secrets` volume. This directory contains the `db-password` file with the database password (`DB_PASS`) from the Stronghold Key-Value store.
 
-1. Check the Pod logs after startup. The output should contain the contents of `/mnt/secrets/db-password`:
+1. Check the pod logs after startup. The output should contain the contents of `/mnt/secrets/db-password`:
 
    ```bash
    d8 k -n myapp-namespace logs myapp3
    ```
 
-1. Delete the Pod:
+1. Delete the pod:
 
    ```bash
    d8 k -n myapp-namespace delete pod myapp3 --force
@@ -524,7 +524,7 @@ Example:
    d8 stronghold kv put demo-kv/myapp-secret keytab=$(cat /path/to/keytab_file | base64 -w0)
    ```
 
-1. Create a [SecretsStoreImport](cr.html#secretsstoreimport) manifest with the decoding parameter set:
+1. Create a [`SecretsStoreImport](cr.html#secretsstoreimport) manifest with the decoding parameter set:
 
    ```yaml
    apiVersion: deckhouse.io/v1alpha1
@@ -549,12 +549,12 @@ Example:
 
 The autorotation feature in the `secrets-store-integration` module is enabled by default. Every two minutes, the module polls Stronghold and synchronizes secrets in the mounted file if they have changed.
 
-There are two ways to track changes to the secret file in a Pod:
+There are two ways to track changes to the secret file in a pod:
 
 - watch the modification time of the mounted file and react when it changes;
 - use the `inotify` API, which provides a file system event subscription mechanism.
 
-`Inotify` is part of the Linux kernel. Once a change is detected, there are many possible responses depending on the application architecture and programming language. The simplest option is to make Kubernetes restart the Pod by failing the `livenessProbe`.
+`Inotify` is part of the Linux kernel. Once a change is detected, there are many possible responses depending on the application architecture and programming language. The simplest option is to make Kubernetes restart the pod by failing the `livenessProbe`.
 
 Example of using `inotify` in a Python application:
 

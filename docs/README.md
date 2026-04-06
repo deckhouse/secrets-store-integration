@@ -91,11 +91,11 @@ the value from the `env-from-path` annotation takes precedence.
 
 ## Scenario comparison
 
-| Architectural model | Implementation mechanism | How the application gets the data | Where it is stored in Kubernetes | Resource consumption | Status |
-| --- | --- | --- | --- | --- | --- |
-| The application retrieves the secret itself | Direct application access | Directly from the secret store | Not stored | Unchanged | Implemented |
-| The platform delivers the secret through a file | CSI | From a disk volume (as a file) | Not stored | Two pods on each node (DaemonSet) | Implemented |
-| The platform delivers the secret through environment variables | Entrypoint injection | Secrets are delivered from the store at application startup as environment variables | Not stored | One pod on each node (DaemonSet) | Implemented |
+| Architectural model | Implementation mechanism | How the application gets the data | Where it is stored in Kubernetes | Resource consumption |
+| --- | --- | --- | --- | --- |
+| The application retrieves the secret itself | Direct application access | Directly from the secret store | Not stored | Unchanged |
+| The platform delivers the secret through a file | CSI | From a disk volume (as a file) | Not stored | Two pods on each node (DaemonSet) |
+| The platform delivers the secret through environment variables | Entrypoint injection | Secrets are delivered from the store at application startup as environment variables | Not stored | One pod on each node (DaemonSet) |
 
 ## What to consider when choosing
 
