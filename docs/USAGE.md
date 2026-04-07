@@ -524,7 +524,7 @@ Example:
    d8 stronghold kv put demo-kv/myapp-secret keytab=$(cat /path/to/keytab_file | base64 -w0)
    ```
 
-1. Create a [`SecretsStoreImport](cr.html#secretsstoreimport) manifest with the decoding parameter set:
+1. Create a [SecretsStoreImport](cr.html#secretsstoreimport) manifest with the decoding parameter set:
 
    ```yaml
    apiVersion: deckhouse.io/v1alpha1
