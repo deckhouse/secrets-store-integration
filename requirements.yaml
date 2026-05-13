@@ -1,4 +1,0 @@
-dependencies:
-- name: deckhouse_lib_helm
-  repository: https://deckhouse.github.io/lib-helm
-  version: 1.70.1
