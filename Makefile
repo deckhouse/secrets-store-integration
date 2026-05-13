@@ -1,3 +1,11 @@
+.PHONY: changelog
+changelog:
+	python3 scripts/generate_release_notes.py
+
+.PHONY: changelog-diff
+changelog-diff:
+	python3 scripts/changelog_diff.py $(TAG)
+
 .PHONY: update-base-images-versions
 update-base-images-versions:
 	##~ Options: version=vMAJOR.MINOR.PATCH
