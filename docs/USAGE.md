@@ -34,7 +34,7 @@ The module requires a preconfigured secret store compatible with HashiCorp Vault
 
 To ensure that each API request is encrypted, sent, and processed by the correct recipient, you need a valid public Certificate Authority certificate used by the secret store. This CA public certificate in PEM format must be used as the `caCert` variable in the module configuration.
 
-Example module configuration for using a Vault-compatible secret store running at `secretstoreexample.com` on the default TLS port (`443`):
+Example module configuration for using a Vault-compatible secret store running at `stronghold.domain.tld` on the default TLS port (`443`):
 
 ```yaml
 apiVersion: deckhouse.io/v1alpha1
@@ -46,7 +46,7 @@ spec:
   enabled: true
   settings:
     connection:
-      url: "https://secretstoreexample.com"
+      url: "https://stronghold.domain.tld"
       authPath: "main-kube"
       caCert: |
         -----BEGIN CERTIFICATE-----
@@ -63,20 +63,6 @@ Setting `caCert` is recommended. If it is not set, the module uses the system `c
 {{< /alert >}}
 
 ## Preparing a test environment
-
-{{< alert level="info">}}
-To run the commands below, you need the Stronghold address and a token with `root` privileges.
-
-You can get such a token when initializing a new secret store.
-
-The examples below assume these settings are defined in environment variables:
-
-```bash
-export VAULT_TOKEN=xxxxxxxxxxx
-export VAULT_ADDR=https://secretstoreexample.com
-```
-
-{{< /alert >}}
 
 {{< alert level="info">}}
 This section contains two variants of example commands:
