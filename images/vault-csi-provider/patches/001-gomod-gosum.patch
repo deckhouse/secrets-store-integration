@@ -1,12 +1,12 @@
 diff --git a/go.mod b/go.mod
-index c623365..2fc7693 100644
+index c623365..07f627a 100644
 --- a/go.mod
 +++ b/go.mod
 @@ -1,74 +1,73 @@
  module github.com/hashicorp/vault-csi-provider
  
 -go 1.20
-+go 1.24.0
++go 1.25.11
  
  require (
 -	github.com/hashicorp/go-hclog v1.5.0

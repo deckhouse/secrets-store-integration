@@ -1,6 +1,6 @@
 module github.com/deckhouse/ssi-controller
 
-go 1.25.0
+go 1.25.11
 
 require (
 	github.com/deckhouse/deckhouse/pkg/log v0.1.0
