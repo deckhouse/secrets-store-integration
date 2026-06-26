@@ -11,7 +11,7 @@ on:
 
 jobs:
   prod_ce_setup_build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Build and Push CE
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
 
   prod_be_setup_build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Build and Push BE
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
 
   prod_se_setup_build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Build and Push SE
     steps:
       - uses: actions/checkout@v4
@@ -89,7 +89,7 @@ jobs:
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
 
   prod_se_plus_setup_build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Build and Push SE+
     steps:
       - uses: actions/checkout@v5
@@ -115,7 +115,7 @@ jobs:
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
 
   prod_ee_setup_build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Build and Push EE
     steps:
       - uses: actions/checkout@v5
@@ -141,7 +141,7 @@ jobs:
           registry_password: ${{ secrets.PROD_MODULES_REGISTRY_PASSWORD }}
 
   prod_fe_setup_build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Build and Push FE
     steps:
       - uses: actions/checkout@v5

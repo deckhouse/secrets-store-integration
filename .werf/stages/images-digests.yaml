@@ -18,7 +18,7 @@ image: images-digests-and-version
 final: false
 fromImage: builder/alpine
 import:
-- image: tools/jq
+- image: jq
   add: /usr/bin/jq
   before: install
 git:
