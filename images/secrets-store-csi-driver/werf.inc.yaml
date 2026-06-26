@@ -60,11 +60,11 @@ git:
 import:
 - image: tools/util-linux
   add: /bin/mount
-  to: /bin/mount
+  to: /usr/bin/mount
   before: setup
 - image: tools/util-linux
   add: /bin/umount
-  to: /bin/umount
+  to: /usr/bin/umount
   before: setup
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
   add: /{{ .ImageName }}

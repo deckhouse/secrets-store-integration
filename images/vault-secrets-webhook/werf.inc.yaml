@@ -13,6 +13,10 @@ git:
   - '**/*_test.go'
   - scripts
   - werf.inc.yaml
+shell:
+  install:
+  - echo "Patches here"
+  - touch /src/.nodata
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
 fromImage: builder/golang
