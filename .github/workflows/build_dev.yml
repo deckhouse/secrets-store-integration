@@ -11,10 +11,15 @@ on:
     branches:
       - main
   workflow_call:
+    inputs:
+      svace_enabled:
+        description: "Enable svace build and analyze"
+        type: boolean
+        required: false
 
 jobs:
   dev_setup_build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Build and Push images
     steps:
       - name: Set vars for PR
@@ -39,3 +44,22 @@ jobs:
           module_source: ${{ vars.DEV_MODULE_SOURCE }}
           module_name: ${{ vars.MODULE_NAME }}
           module_tag: ${{ env.MODULES_MODULE_TAG }}
+
+  analyze_build:
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'analyze/svace') || inputs.svace_enabled == true }}
+    name: Analyze build
+    runs-on: [self-hosted, large]
+    needs:
+      - dev_setup_build
+    steps:
+      - uses: deckhouse/modules-actions/svace_analyze@v4
+        with:
+          project_group: ${{ github.event.repository.name }}
+          ci_commit_ref_name: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          ci_commit_hash: ${{ github.sha }}
+          svace_analyze_host: "${{ secrets.SVACE_ANALYZE_HOST }}"
+          svace_analyze_ssh_user: "${{ secrets.SVACE_ANALYZE_SSH_USER }}"
+          svacer_url: "${{ secrets.SVACER_URL }}"
+          svacer_import_user: "${{ secrets.SVACER_IMPORT_USER }}"
+          svacer_import_password: "${{ secrets.SVACER_IMPORT_PASSWORD }}"
+          svace_analyze_ssh_private_key: "${{ secrets.SVACE_ANALYZE_SSH_PRIVATE_KEY }}"

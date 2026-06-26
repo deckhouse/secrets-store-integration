@@ -45,7 +45,7 @@ on:
 jobs:
   job-CE:
     name: Edition CE
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     if: github.event.inputs.ce == 'true'
     steps:
       - uses: actions/checkout@v5
@@ -63,7 +63,7 @@ jobs:
 
   job-EE:
     name: Edition EE
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     if: github.event.inputs.ee == 'true'
     steps:
       - uses: actions/checkout@v5
@@ -81,7 +81,7 @@ jobs:
 
   job-FE:
     name: Edition FE
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     if: github.event.inputs.fe == 'true'
     steps:
       - uses: actions/checkout@v5
@@ -99,7 +99,7 @@ jobs:
 
   job-BE:
     name: Edition BE
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     if: github.event.inputs.be == 'true'
     steps:
       - uses: actions/checkout@v5
@@ -117,7 +117,7 @@ jobs:
 
   job-SE:
     name: Edition SE
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     if: github.event.inputs.se == 'true'
     steps:
       - uses: deckhouse/modules-actions/setup@v5
@@ -134,7 +134,7 @@ jobs:
 
   job-SE-plus:
     name: Edition SE+
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     if: github.event.inputs.se-plus == 'true'
     steps:
       - uses: actions/checkout@v5
