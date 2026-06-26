@@ -15,6 +15,7 @@ git:
   - werf.inc.yaml
 shell:
   install:
+    - echo "Patches here"
     - cd /src/{{ .ImageName }}
     - git apply /src/patches/*.patch --verbose
 ---

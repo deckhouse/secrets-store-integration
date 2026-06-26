@@ -12,7 +12,7 @@ git:
         - '**/*.go'
 shell:
   install:
-    - echo "src artifact"
+    - echo "Patches here"
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
 fromImage: {{ eq $.SVACE_ENABLED "false" | ternary "builder/golang" "builder/alt-go-svace" }}

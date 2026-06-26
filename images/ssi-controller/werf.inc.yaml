@@ -19,6 +19,9 @@ git:
   - .*
   - '**/*_test.go'
   - werf.inc.yaml
+shell:
+  install:
+  - echo "Patches here"
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
 fromImage: builder/golang
