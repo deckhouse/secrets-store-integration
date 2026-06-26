@@ -40,7 +40,7 @@ jobs:
           registry_login: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
       - if: ${{ github.event.inputs.enableBuild == 'true' }}
-        uses: deckhouse/modules-actions/build@v5
+        uses: deckhouse/modules-actions/build@v15
         with:
           module_source: "${{ vars.DEV_MODULE_SOURCE }}"
           module_name: ${{ vars.MODULE_NAME }}
