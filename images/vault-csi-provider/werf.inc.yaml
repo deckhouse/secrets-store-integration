@@ -49,9 +49,9 @@ git:
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
   add: /{{ .ImageName }}
-  to: /bin/{{ .ImageName }}
+  to: /usr/bin/{{ .ImageName }}
   before: setup
 imageSpec:
   config:
     entrypoint:
-    - /bin/{{ .ImageName }}
+    - /usr/bin/{{ .ImageName }}
