@@ -27,7 +27,7 @@ jobs:
   cve_scan_on_pr:
     if: github.event_name == 'pull_request'
     name: CVE scan for PR
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     steps:
       - uses: actions/checkout@v5
       - uses: imjasonh/setup-crane@v0.4
@@ -48,7 +48,7 @@ jobs:
   cve_scan:
     if: github.event_name != 'pull_request'
     name: Regular CVE scan
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     steps:
       - uses: actions/checkout@v5
       - uses: imjasonh/setup-crane@v0.4
