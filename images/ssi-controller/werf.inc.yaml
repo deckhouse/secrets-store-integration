@@ -22,6 +22,7 @@ git:
 shell:
   install:
   - echo "Patches here"
+  - touch /src/.nodata
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
 fromImage: builder/golang
@@ -37,9 +38,9 @@ shell:
   install:
   - export GOPROXY=$(cat /run/secrets/GOPROXY) CGO_ENABLED=0 GOOS=linux GOARCH=amd64
   - cd /src
-  - go build -ldflags="-s -w" -o /bin/{{ .ImageName }} cmd/main.go
+  - go build -ldflags="-s -w" -o /usr/bin/{{ .ImageName }} cmd/main.go
   - chown -R 64535:64535 /bin/{{ .ImageName }}
-  - chmod 0555 /bin/{{ .ImageName }}
+  - chmod 0555 /usr/bin/{{ .ImageName }}
   - cd /
   - rm -rf /src
 secrets:
@@ -50,8 +51,8 @@ image: {{ .ModuleNamePrefix }}{{ .ImageName }}
 fromImage: base/distroless
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-  add: /bin/{{ .ImageName }}
-  to: /bin/{{ .ImageName }}
+  add: /usr/bin/{{ .ImageName }}
+  to: /usr/bin/{{ .ImageName }}
   before: install
   stage: install
 imageSpec:

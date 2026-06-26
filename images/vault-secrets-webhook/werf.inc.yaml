@@ -16,6 +16,7 @@ git:
 shell:
   install:
   - echo "Patches here"
+  - touch /src/.nodata
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
 fromImage: builder/golang

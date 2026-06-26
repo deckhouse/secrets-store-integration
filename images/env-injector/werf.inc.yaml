@@ -15,6 +15,7 @@ git:
 shell:
   install:
   - echo "Patches here"
+  - touch /src/.nodata
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
 fromImage: builder/golang
@@ -44,10 +45,10 @@ fromImage: base/distroless
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
   add: /bin/{{ .ImageName }}
-  to: /bin/{{ .ImageName }}
+  to: /usr/bin/{{ .ImageName }}
   before: install
   stage: install
 imageSpec:
   config:
     entrypoint:
-    - /bin/{{ .ImageName }}
+    - /usr/bin/{{ .ImageName }}
