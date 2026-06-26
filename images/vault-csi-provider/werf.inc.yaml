@@ -19,7 +19,7 @@ shell:
     - git apply /src/patches/*.patch --verbose
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: builder/golang-gost-alpine
+fromImage: builder/golang
 final: false
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact

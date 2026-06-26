@@ -26,7 +26,7 @@ shell:
     - git apply /src/patches/*.patch --verbose
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: builder/golang-gost-alpine
+fromImage: builder/golang
 final: false
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
@@ -48,6 +48,10 @@ shell:
 secrets:
 - id: GOPROXY
   value: {{ .GOPROXY }}
+---
+image: tools/util-linux
+from: registry.deckhouse.io/base_images@sha256:cdfc92bd8bd683bd8308f9ba29bfd2c4d41f17e1267a1d6c0dfcc0a01c561371
+final: false
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}
 fromImage: base/distroless
