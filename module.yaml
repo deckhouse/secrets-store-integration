@@ -7,5 +7,6 @@ descriptions:
   ru: |
     Реализует доставку секретов для приложения в Kubernetes-кластерах путем подключения секретов, ключей и сертификатов, хранящихся во внешних хранилищах секретов.
 requirements:
-  bootstrapped: true
-  deckhouse: ">= 1.71"
+  deckhouse: ">= 1.72"
+subsystems:
+  - security
