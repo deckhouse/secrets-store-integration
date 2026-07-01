@@ -1,12 +1,17 @@
 {{- define "ssi.imagePullSecrets" -}}
-{{- if .Values.secretsStoreIntegration.registry }}
-  {{- with .Values.secretsStoreIntegration.registry.dockercfg }}
+{{- $secretName := include "ssi.registrySecretName" . | trim -}}
 imagePullSecrets:
-- name: module-registry
-  {{- end }}
+- name: {{ $secretName }}
+{{- end }}
+{{- define "ssi.registrySecretName" -}}
+{{- $moduleDockercfg := dig "secretsStoreIntegration" "registry" "dockercfg" "" .Values -}}
+{{- $deckhouseDockercfg := dig "global" "modulesImages" "registry" "dockercfg" "" .Values -}}
+{{- if $moduleDockercfg }}
+module-registry
+{{- else if $deckhouseDockercfg }}
+deckhouse-registry
 {{- else }}
-imagePullSecrets:
-- name: deckhouse-registry
+{{- fail "neither global nor module registry configuration is set, cannot render imagePullSecrets" }}
 {{- end }}
 {{- end }}
 {{- define "module_container_security_context_readonly_fs_flexible" -}}
