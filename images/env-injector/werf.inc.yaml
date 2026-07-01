@@ -31,11 +31,9 @@ shell:
   install:
   - export GOPROXY=$(cat /run/secrets/GOPROXY) CGO_ENABLED=0 GOOS=linux GOARCH=amd64
   - cd /src
-  - go build -ldflags="-s -w" -o /bin/{{ .ImageName }} .
-  - chown -R 64535:64535 /bin/{{ .ImageName }}
-  - chmod 0555 /bin/{{ .ImageName }}
-  - cd /
-  - rm -rf /src
+  - go build -ldflags="-s -w" -o {{ .ImageName }} .
+  - chown -R 64535:64535 {{ .ImageName }}
+  - chmod 0555 {{ .ImageName }}
 secrets:
 - id: GOPROXY
   value: {{ .GOPROXY }}
@@ -44,7 +42,7 @@ image: {{ .ModuleNamePrefix }}{{ .ImageName }}
 fromImage: base/distroless
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-  add: /bin/{{ .ImageName }}
+  add: /src/{{ .ImageName }}
   to: /usr/bin/{{ .ImageName }}
   before: install
   stage: install

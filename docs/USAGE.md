@@ -264,7 +264,9 @@ In the modified pod:
 1. In the remaining containers, the original startup commands are replaced with a command that launches the injector binary.
 1. The injector retrieves the required data from a Vault-compatible store using the application's service account.
 1. It puts these variables into the process `ENV`.
-1. It performs the `execve` system call and starts the original command.
+1. It starts the original command. The launch method depends on the mode:
+   - By default (`restart-on-secret-change: none`) the injector performs the `execve` system call, replacing the current process — the application becomes PID 1 of the container.
+   - In secret monitoring modes (`watch-for-lease`, `watch-for-data`) the injector uses `fork`+`exec`: it stays the container's parent process (PID 1) and the application runs as a child process. This is required to renew leases and/or periodically check secret values.
 
 If a container does not define a startup command in the pod manifest, the image manifest is fetched from the registry and the command is taken from it.
 
@@ -292,6 +294,9 @@ The following annotations are available to modify injector behavior:
 | `secrets-store.deckhouse.io/log-level` | `info` | Logging level |
 | `secrets-store.deckhouse.io/enable-json-log` | `false` | Enables JSON log output |
 | `secrets-store.deckhouse.io/skip-mutate-containers` | | Space-separated list of container names that will not be mutated |
+| `secrets-store.deckhouse.io/service-account-token-path` | `<service-account-token-volume-name>/token` | Path to the ServiceAccount JWT token file used by the injector to authenticate in the store. |
+| `secrets-store.deckhouse.io/restart-on-secret-change` | `none` | Secret change reaction mode: `none` — no monitoring (default), `watch-for-lease` — terminate the application when a secret lease expires (for dynamic secrets such as database credentials), `watch-for-data` — periodically poll secret values and restart the container when they change |
+| `secrets-store.deckhouse.io/secret-poll-interval` | `120s` | Polling interval for secrets in `watch-for-data` mode |
 
 Using the injector, you can specify templates in pod manifests instead of actual `env` values. They are replaced with values from the store at container startup time.
 
@@ -323,6 +328,58 @@ env:
     value: secrets-store:demo-kv/data/myapp-secret#DB_PASS#4
 ```
 
+### Value templates (templater)
+
+Instead of a key name in the second part of the reference (`path#key`), you can specify a Go template with `${` and `}` delimiters. The template is executed against the secret data read from the store. This lets you build an environment variable value from multiple fields of a single secret.
+
+Suppose the store contains a secret at `demo-kv/data/database/config`:
+
+```json
+{
+  "username": "app",
+  "password": "s3cr3t",
+  "host": "db.example.com",
+  "port": "5432"
+}
+```
+
+You can define a database connection URL variable:
+
+```yaml
+env:
+  - name: DATABASE_URL
+    value: secrets-store:demo-kv/data/database/config#postgresql://${.username}:${.password}@${.host}:${.port}/mydb
+```
+
+To request a specific secret version, append the version number as the third segment separated by `#`:
+
+```yaml
+env:
+  - name: DATABASE_URL
+    value: secrets-store:demo-kv/data/database/config#postgresql://${.username}:${.password}@${.host}:${.port}/mydb#4
+```
+
+Templates support [Sprig](https://masterminds.github.io/sprig/) functions, as well as `file` (read file contents) and `accessor` (placeholder for a Vault accessor path).
+
+### Configuring the ServiceAccount token path
+
+By default, the injector reads the ServiceAccount JWT token from `/var/run/secrets/kubernetes.io/serviceaccount/token`. If the token is mounted elsewhere (for example, via a projected volume or a separate Secret), specify the file path using the `secrets-store.deckhouse.io/service-account-token-path` annotation:
+
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: myapp
+  annotations:
+    secrets-store.deckhouse.io/role: "myapp-role"
+    secrets-store.deckhouse.io/service-account-token-path: /var/run/secrets/tokens/vault-token
+spec:
+  serviceAccountName: myapp-sa
+  containers:
+  - name: myapp
+    image: myapp:latest
+```
+
 The template can also be stored in a ConfigMap or a Secret and connected using `envFrom`:
 
 ```yaml
@@ -334,6 +391,35 @@ envFrom:
 ```
 
 Actual secrets from the Vault-compatible store are injected only at application startup. The Secret and ConfigMap objects contain templates.
+
+### Restart on secret change
+
+By default (`restart-on-secret-change: none`) the injector reads secrets once at container startup and launches the application via `execve`, replacing the current process. The `secrets-store.deckhouse.io/restart-on-secret-change` annotation enables monitoring and automatic container restart; in this case the application is started via `fork`+`exec` and the injector remains PID 1 of the container.
+
+**`watch-for-lease`** — for dynamic secrets with a lease (for example, database credentials). The injector stays as the parent process, renews the lease, and terminates the child process when the secret lease expires. Kubernetes restarts the container and secrets are read again.
+
+**`watch-for-data`** — for static secrets (KV). The injector periodically (at the `secret-poll-interval`, default `120s`) re-reads secret values, compares their hash with the initial one, and on change terminates the child process and then exits itself. Kubernetes restarts the entire container and secrets are injected again. The effective poll interval is randomized at startup within ±30% of the configured value, so replicas of the same application notice a secret change at different moments and do not restart simultaneously. In this mode, secrets obtained via POST `>>secrets-store:` are not included in the digest calculation.
+
+Example for KV secrets with automatic restart on change:
+
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: myapp
+  annotations:
+    secrets-store.deckhouse.io/role: "myapp-role"
+    secrets-store.deckhouse.io/restart-on-secret-change: "watch-for-data"
+    secrets-store.deckhouse.io/secret-poll-interval: "120s"
+spec:
+  serviceAccountName: myapp-sa
+  containers:
+  - name: myapp
+    image: myapp:latest
+    env:
+    - name: PASSWORD
+      value: secrets-store:demo-kv/data/myapp-secret#DB_PASS
+```
 
 ### Importing variables from a store path
 

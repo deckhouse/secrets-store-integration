@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Flant JSC
+Copyright 2026 Flant JSC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,21 +20,18 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
-	"net"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"os/signal"
-	"slices"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
 	"emperror.dev/errors"
-	"github.com/bank-vaults/vault-sdk/vault"
+	"github.com/deckhouse/deckhouse/pkg/log"
 	vaultapi "github.com/hashicorp/vault/api"
-	slogmulti "github.com/samber/slog-multi"
-	slogsyslog "github.com/samber/slog-syslog"
 	"github.com/spf13/cast"
 )
 
@@ -52,39 +49,39 @@ type envType struct {
 }
 
 var sanitizeEnvmap = map[string]envType{
-	"VAULT_TOKEN":                  {login: true},
-	"VAULT_ADDR":                   {login: true},
-	"VAULT_AGENT_ADDR":             {login: true},
-	"VAULT_CACERT":                 {login: true},
-	"VAULT_CAPATH":                 {login: true},
-	"VAULT_CLIENT_CERT":            {login: true},
-	"VAULT_CLIENT_KEY":             {login: true},
-	"VAULT_CLIENT_TIMEOUT":         {login: true},
-	"VAULT_SRV_LOOKUP":             {login: true},
-	"VAULT_SKIP_VERIFY":            {login: true},
-	"VAULT_NAMESPACE":              {login: true},
-	"VAULT_TLS_SERVER_NAME":        {login: true},
-	"VAULT_WRAP_TTL":               {login: true},
-	"VAULT_MFA":                    {login: true},
-	"VAULT_MAX_RETRIES":            {login: true},
-	"VAULT_CLUSTER_ADDR":           {login: false},
-	"VAULT_REDIRECT_ADDR":          {login: false},
-	"VAULT_CLI_NO_COLOR":           {login: false},
-	"VAULT_RATE_LIMIT":             {login: false},
-	"VAULT_ROLE":                   {login: false},
-	"VAULT_PATH":                   {login: false},
-	"VAULT_AUTH_METHOD":            {login: false},
-	"VAULT_TRANSIT_KEY_ID":         {login: false},
-	"VAULT_TRANSIT_PATH":           {login: false},
-	"VAULT_TRANSIT_BATCH_SIZE":     {login: false},
-	"VAULT_IGNORE_MISSING_SECRETS": {login: false},
-	"VAULT_ENV_PASSTHROUGH":        {login: false},
-	"VAULT_JSON_LOG":               {login: false},
-	"VAULT_LOG_LEVEL":              {login: false},
-	"VAULT_REVOKE_TOKEN":           {login: false},
-	"VAULT_ENV_DAEMON":             {login: false},
-	"VAULT_ENV_FROM_PATH":          {login: false},
-	"VAULT_ENV_DELAY":              {login: false},
+	"VAULT_TOKEN":                        {login: true},
+	"VAULT_ADDR":                         {login: true},
+	"VAULT_AGENT_ADDR":                   {login: true},
+	"VAULT_CACERT":                       {login: true},
+	"VAULT_CAPATH":                       {login: true},
+	"VAULT_CLIENT_CERT":                  {login: true},
+	"VAULT_CLIENT_KEY":                   {login: true},
+	"VAULT_CLIENT_TIMEOUT":               {login: true},
+	"VAULT_SRV_LOOKUP":                   {login: true},
+	"VAULT_SKIP_VERIFY":                  {login: true},
+	"VAULT_NAMESPACE":                    {login: true},
+	"VAULT_TLS_SERVER_NAME":              {login: true},
+	"VAULT_WRAP_TTL":                     {login: true},
+	"VAULT_MFA":                          {login: true},
+	"VAULT_MAX_RETRIES":                  {login: true},
+	"VAULT_CLUSTER_ADDR":                 {login: false},
+	"VAULT_REDIRECT_ADDR":                {login: false},
+	"VAULT_CLI_NO_COLOR":                 {login: false},
+	"VAULT_RATE_LIMIT":                   {login: false},
+	"VAULT_ROLE":                         {login: false},
+	"VAULT_PATH":                         {login: false},
+	"VAULT_AUTH_METHOD":                  {login: false},
+	"VAULT_JWT_FILE":                     {login: false},
+	"VAULT_IGNORE_MISSING_SECRETS":       {login: false},
+	"VAULT_ENV_PASSTHROUGH":              {login: false},
+	"VAULT_JSON_LOG":                     {login: false},
+	"VAULT_LOG_LEVEL":                    {login: false},
+	"VAULT_REVOKE_TOKEN":                 {login: false},
+	"VAULT_ENV_DAEMON":                   {login: false},
+	"VAULT_ENV_FROM_PATH":                {login: false},
+	"VAULT_ENV_DELAY":                    {login: false},
+	"VAULT_ENV_RESTART_ON_SECRET_CHANGE": {login: false},
+	"VAULT_ENV_SECRET_POLL_INTERVAL":     {login: false},
 }
 
 // Appends variable an entry (name=value) into the environ list.
@@ -96,9 +93,9 @@ func (e *sanitizedEnviron) append(name string, value string) {
 }
 
 type daemonSecretRenewer struct {
-	client *vault.Client
+	client *Client
 	sigs   chan os.Signal
-	logger *slog.Logger
+	logger Logger
 }
 
 func (r daemonSecretRenewer) Renew(path string, secret *vaultapi.Secret) error {
@@ -115,21 +112,21 @@ func (r daemonSecretRenewer) Renew(path string, secret *vaultapi.Secret) error {
 		for {
 			select {
 			case renewOutput := <-watcher.RenewCh():
-				r.logger.Info("secret renewed", slog.String("path", path), slog.Duration("lease-duration", time.Duration(renewOutput.Secret.LeaseDuration)*time.Second))
+				r.logger.Info("secret renewed", "path", path, "lease-duration", time.Duration(renewOutput.Secret.LeaseDuration)*time.Second)
 			case doneError := <-watcher.DoneCh():
 				if !secret.Renewable {
 					leaseDuration := time.Duration(secret.LeaseDuration) * time.Second
 					time.Sleep(leaseDuration)
 
-					r.logger.Info("secret lease has expired", slog.String("path", path), slog.Duration("lease-duration", leaseDuration))
+					r.logger.Info("secret lease has expired", "path", path, "lease-duration", leaseDuration)
 				}
 
-				r.logger.Info("secret renewal has stopped, sending SIGTERM to process", slog.String("path", path), slog.Any("done-error", doneError))
+				r.logger.Info("secret renewal has stopped, sending SIGTERM to process", "path", path, "done-error", doneError)
 
 				r.sigs <- syscall.SIGTERM
 
 				timeout := <-time.After(10 * time.Second)
-				r.logger.Info("killing process due to SIGTERM timeout", slog.Time("timeout", timeout))
+				r.logger.Info("killing process due to SIGTERM timeout", "timeout", timeout)
 				r.sigs <- syscall.SIGKILL
 
 				return
@@ -140,65 +137,139 @@ func (r daemonSecretRenewer) Renew(path string, secret *vaultapi.Secret) error {
 	return nil
 }
 
-func main() {
-	var logger *slog.Logger
-	{
-		var level slog.Level
+// kubernetesSignals are delivered to env-injector (PID 1) by the container
+// runtime / kubelet and must be forwarded to the application process.
+// Internal SIGTERM/SIGKILL requests (secret change, lease expiry) are sent
+// directly to the sigs channel and are not registered via signal.Notify.
+var kubernetesSignals = []os.Signal{
+	syscall.SIGINT,
+	syscall.SIGTERM,
+	syscall.SIGHUP,
+	syscall.SIGQUIT,
+}
 
-		err := level.UnmarshalText([]byte(os.Getenv("VAULT_LOG_LEVEL")))
-		if err != nil { // Silently fall back to info level
-			level = slog.LevelInfo
-		}
+// jitterFraction is the maximum relative skew applied to the poll interval,
+// i.e. the effective interval is uniformly distributed in [0.7*i, 1.3*i].
+const jitterFraction = 0.3
 
-		levelFilter := func(levels ...slog.Level) func(ctx context.Context, r slog.Record) bool {
-			return func(ctx context.Context, r slog.Record) bool {
-				return slices.Contains(levels, r.Level)
-			}
-		}
-
-		router := slogmulti.Router()
-
-		if cast.ToBool(os.Getenv("VAULT_JSON_LOG")) {
-			// Send logs with level higher than warning to stderr
-			router = router.Add(
-				slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}),
-				levelFilter(slog.LevelWarn, slog.LevelError),
-			)
-
-			// Send info and debug logs to stdout
-			router = router.Add(
-				slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-				levelFilter(slog.LevelDebug, slog.LevelInfo),
-			)
-		} else {
-			// Send logs with level higher than warning to stderr
-			router = router.Add(
-				slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}),
-				levelFilter(slog.LevelWarn, slog.LevelError),
-			)
-
-			// Send info and debug logs to stdout
-			router = router.Add(
-				slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-				levelFilter(slog.LevelDebug, slog.LevelInfo),
-			)
-		}
-
-		if logServerAddr := os.Getenv("VAULT_ENV_LOG_SERVER"); logServerAddr != "" {
-			writer, err := net.Dial("udp", logServerAddr)
-
-			// We silently ignore syslog connection errors for the lack of a better solution
-			if err == nil {
-				router = router.Add(slogsyslog.Option{Level: slog.LevelInfo, Writer: writer}.NewSyslogHandler())
-			}
-		}
-
-		// TODO: add level filter handler
-		logger = slog.New(router.Handler())
-		logger = logger.With(slog.String("app", "env-injector"))
-
-		slog.SetDefault(logger)
+// jitteredInterval randomizes the poll interval by ±jitterFraction. Each pod
+// draws its own value at startup, so replicas poll with different periods,
+// their phases drift apart, and a secret change doesn't restart all of them
+// at the same moment.
+func jitteredInterval(interval time.Duration) time.Duration {
+	maxSkew := time.Duration(float64(interval) * jitterFraction)
+	if maxSkew <= 0 {
+		return interval
 	}
+
+	return interval - maxSkew + rand.N(2*maxSkew)
+}
+
+func watchSecretsForChanges(
+	ctx context.Context,
+	client *Client,
+	config Config,
+	templateEnviron map[string]string,
+	envFromPath string,
+	initialHash string,
+	pollInterval time.Duration,
+	sigs chan os.Signal,
+	restartDueToSecretChange *atomic.Bool,
+	logger Logger,
+) {
+	// The poll injector has no renewer, so it must never try to start
+	// lease renewal (that would dereference a nil renewer in daemon mode).
+	pollConfig := config
+	pollConfig.DaemonMode = false
+
+	effectiveInterval := jitteredInterval(pollInterval)
+	logger.Info("watching secrets for changes", "effective-poll-interval", effectiveInterval)
+
+	ticker := time.NewTicker(effectiveInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			secretsSet := make(map[string]string)
+			inject := func(key, value string) {
+				secretsSet[key] = value
+			}
+
+			// Re-resolve from a fresh injector and a fresh copy of the templates each
+			// poll: the injector caches resolved paths, and we must always start from
+			// templates (secrets-store:...), not from previously resolved Vault values.
+			references := make(map[string]string, len(templateEnviron))
+			for name, value := range templateEnviron {
+				references[name] = value
+			}
+
+			pollInjector := NewSecretInjector(pollConfig, client, nil, logger)
+			err := pollInjector.InjectSecretsFromVault(references, inject)
+			if err == nil && envFromPath != "" {
+				err = pollInjector.InjectSecretsFromVaultPath(envFromPath, inject)
+			}
+			if err != nil {
+				logger.Warn("failed to poll secrets from vault", log.Err(err))
+
+				// "permission denied" means the token has expired or been revoked
+				// (e.g. renewal reached the token max TTL); try to re-authenticate
+				// so that the next poll can succeed.
+				if isPermissionDeniedError(err) {
+					if reloginErr := client.Relogin(); reloginErr != nil {
+						logger.Warn("failed to re-login to vault", log.Err(reloginErr))
+					} else {
+						logger.Info("re-logged in to vault after permission denied")
+					}
+				}
+
+				continue
+			}
+
+			newHash := computeSecretsHash(secretsSet)
+			// Drop the resolved secret values as soon as the hash is computed.
+			clear(secretsSet)
+			clear(references)
+
+			if newHash == initialHash {
+				continue
+			}
+
+			logger.Info("secret values changed, restarting process",
+				"old-hash", initialHash,
+				"new-hash", newHash,
+			)
+
+			restartDueToSecretChange.Store(true)
+
+			select {
+			case sigs <- syscall.SIGTERM:
+			case <-ctx.Done():
+				return
+			}
+
+			select {
+			case <-time.After(10 * time.Second):
+			case <-ctx.Done():
+				return
+			}
+
+			logger.Info("killing process due to SIGTERM timeout after secret change")
+
+			select {
+			case sigs <- syscall.SIGKILL:
+			case <-ctx.Done():
+			}
+
+			return
+		}
+	}
+}
+
+func main() {
+	logger := newLogger()
 
 	if len(os.Args) == 1 {
 		logger.Error("no command is given, env-injector can't determine the entrypoint (command), please specify it explicitly or let the webhook query it (see documentation)")
@@ -213,25 +284,25 @@ func main() {
 	if len(os.Args) == 2 && os.Args[1] == "--self-copy" {
 		source, err := os.Open("/bin/env-injector") //open the source file
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("failed to open env-injector source", log.Err(err))
 			os.Exit(1)
 		}
 		defer source.Close()
 
 		destination, err := os.Create("/vault/env-injector") //create the destination file
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("failed to create env-injector destination", log.Err(err))
 			os.Exit(1)
 		}
 		defer destination.Close()
 		_, err = io.Copy(destination, source) //copy the contents of source to destination file
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("failed to copy env-injector binary", log.Err(err))
 			os.Exit(1)
 		}
 		err = os.Chmod("/vault/env-injector", 0555)
 		if err != nil {
-			logger.Error(err.Error())
+			logger.Error("failed to chmod env-injector destination", log.Err(err))
 			os.Exit(1)
 		}
 
@@ -239,52 +310,37 @@ func main() {
 	}
 
 	daemonMode := cast.ToBool(os.Getenv("VAULT_ENV_DAEMON"))
+	restartMode := os.Getenv("VAULT_ENV_RESTART_ON_SECRET_CHANGE")
+	if restartMode == "watch-for-lease" {
+		daemonMode = true
+	}
+	watchData := restartMode == "watch-for-data"
 	delayExec := cast.ToDuration(os.Getenv("VAULT_ENV_DELAY"))
+	secretPollInterval := cast.ToDuration(os.Getenv("VAULT_ENV_SECRET_POLL_INTERVAL"))
+	if watchData && secretPollInterval <= 0 {
+		secretPollInterval = 120 * time.Second
+	}
 	sigs := make(chan os.Signal, 1)
 
 	entrypointCmd := os.Args[1:]
 
 	binary, err := exec.LookPath(entrypointCmd[0])
 	if err != nil {
-		logger.Error("binary not found", slog.String("binary", entrypointCmd[0]))
+		logger.Error("binary not found", "binary", entrypointCmd[0])
 
 		os.Exit(1)
 	}
 
-	// Used both for reading secrets and transit encryption
 	ignoreMissingSecrets := cast.ToBool(os.Getenv("VAULT_IGNORE_MISSING_SECRETS"))
 
-	clientOptions := []vault.ClientOption{vault.ClientLogger(clientLogger{logger})}
 	// The login procedure takes the token from a file (if using Vault Agent)
-	// or requests one for itself (Kubernetes Auth, or GCP, etc...),
+	// or requests one for itself via Kubernetes/JWT auth,
 	// so if we got a VAULT_TOKEN for the special value with "vault:login"
-	originalVaultTokenEnvVar := os.Getenv("VAULT_TOKEN")
-	isLogin := originalVaultTokenEnvVar == vaultLogin
-	if tokenFile := os.Getenv("VAULT_TOKEN_FILE"); tokenFile != "" {
-		// load token from vault-agent .vault-token or injected webhook
-		if b, err := os.ReadFile(tokenFile); err == nil {
-			originalVaultTokenEnvVar = string(b)
-		} else {
-			logger.Error("could not read vault token file", slog.String("file", tokenFile))
+	isLogin := os.Getenv("VAULT_TOKEN") == vaultLogin
 
-			os.Exit(1)
-		}
-		clientOptions = append(clientOptions, vault.ClientToken(originalVaultTokenEnvVar))
-	} else {
-		if isLogin {
-			_ = os.Unsetenv("VAULT_TOKEN")
-		}
-		// use role/path based authentication
-		clientOptions = append(clientOptions,
-			vault.ClientRole(os.Getenv("VAULT_ROLE")),
-			vault.ClientAuthPath(os.Getenv("VAULT_PATH")),
-			vault.ClientAuthMethod(os.Getenv("VAULT_AUTH_METHOD")),
-		)
-	}
-
-	client, err := vault.NewClientWithOptions(clientOptions...)
+	client, err := newVaultClient(logger)
 	if err != nil {
-		logger.Error(fmt.Errorf("failed to create vault client: %w", err).Error())
+		logger.Error("failed to create vault client", log.Err(err))
 
 		os.Exit(1)
 	}
@@ -308,9 +364,6 @@ func main() {
 	sanitized := sanitizedEnviron{login: isLogin}
 
 	config := Config{
-		TransitKeyID:         os.Getenv("VAULT_TRANSIT_KEY_ID"),
-		TransitPath:          os.Getenv("VAULT_TRANSIT_PATH"),
-		TransitBatchSize:     cast.ToInt(os.Getenv("VAULT_TRANSIT_BATCH_SIZE")),
 		DaemonMode:           daemonMode,
 		IgnoreMissingSecrets: ignoreMissingSecrets,
 	}
@@ -330,6 +383,17 @@ func main() {
 		environ[name] = value
 	}
 
+	// Snapshot the templated environment (e.g. MY_APP=secrets-store:path#key) before
+	// injection mutates it. Periodic polling must re-resolve from these templates,
+	// never from the values already fetched from Vault.
+	var templateEnviron map[string]string
+	if watchData {
+		templateEnviron = make(map[string]string, len(environ))
+		for name, value := range environ {
+			templateEnviron[name] = value
+		}
+	}
+
 	// collect all secrets into a map, to avoid duplicate entries, then append to an environ
 	secretsSet := make(map[string]string)
 	inject := func(key, value string) {
@@ -338,7 +402,7 @@ func main() {
 
 	err = secretInjector.InjectSecretsFromVault(environ, inject)
 	if err != nil {
-		logger.Error(fmt.Errorf("failed to inject secrets from vault: %w", err).Error())
+		logger.Error("failed to inject secrets from vault", log.Err(err))
 
 		os.Exit(1)
 	}
@@ -347,7 +411,7 @@ func main() {
 		err = secretInjector.InjectSecretsFromVaultPath(paths, inject)
 	}
 	if err != nil {
-		logger.Error(fmt.Errorf("failed to inject secrets from vault path: %w", err).Error())
+		logger.Error("failed to inject secrets from vault path", log.Err(err))
 
 		os.Exit(1)
 	}
@@ -356,62 +420,156 @@ func main() {
 		sanitized.append(key, value)
 	}
 
-	if cast.ToBool(os.Getenv("VAULT_REVOKE_TOKEN")) {
-		// ref: https://www.vaultproject.io/api/auth/token/index.html#revoke-a-token-self-
-		err = client.RawClient().Auth().Token().RevokeSelf(client.RawClient().Token())
-		if err != nil {
-			// Do not exit on error, token revoking can be denied by policy
-			logger.Warn("failed to revoke token")
+	envFromPath := os.Getenv("VAULT_ENV_FROM_PATH")
+
+	// Prepare the change watching baseline. Update-style references
+	// (">>secrets-store:...") perform a Vault write on every resolution, so they
+	// can't be polled: they are excluded both from the watched templates and from
+	// the baseline hash so that both sides of the comparison cover the same set.
+	var initialSecretsHash string
+	var watchedTemplates map[string]string
+	if watchData {
+		watchedTemplates = make(map[string]string, len(templateEnviron))
+		baseline := make(map[string]string, len(secretsSet))
+		for key, value := range secretsSet {
+			baseline[key] = value
 		}
 
-		client.Close()
+		for name, value := range templateEnviron {
+			if isUpdateReference(value) {
+				logger.Info("excluding update-style secret reference from change watching", "name", name)
+				delete(baseline, name)
+
+				continue
+			}
+			watchedTemplates[name] = value
+		}
+
+		initialSecretsHash = computeSecretsHash(baseline)
+		clear(baseline)
+
+		hasWatchedSecrets := envFromPath != ""
+		for _, value := range watchedTemplates {
+			if IsValidPrefix(value) || HasInlineVaultDelimiters(value) {
+				hasWatchedSecrets = true
+
+				break
+			}
+		}
+		if !hasWatchedSecrets {
+			logger.Info("no pollable secret references found, secret change watching is disabled")
+			watchData = false
+		}
+	}
+
+	// Drop resolved secret values which are not needed anymore, the child
+	// environment has already been built.
+	clear(secretsSet)
+
+	if cast.ToBool(os.Getenv("VAULT_REVOKE_TOKEN")) {
+		if daemonMode || watchData {
+			// The client must stay usable to renew leases or poll secret values.
+			logger.Warn("VAULT_REVOKE_TOKEN is ignored, the vault client must stay active in watch mode")
+		} else {
+			// ref: https://www.vaultproject.io/api/auth/token/index.html#revoke-a-token-self-
+			err = client.RawClient().Auth().Token().RevokeSelf(client.RawClient().Token())
+			if err != nil {
+				// Do not exit on error, token revoking can be denied by policy
+				logger.Warn("failed to revoke token")
+			}
+
+			client.Close()
+		}
 	}
 
 	if delayExec > 0 {
-		logger.Info(fmt.Sprintf("sleeping for %s...", delayExec))
+		logger.Info("sleeping before process start", "delay", delayExec)
 		time.Sleep(delayExec)
 	}
 
-	logger.Info("spawning process", slog.String("entrypoint", fmt.Sprint(entrypointCmd)))
+	logger.Info("spawning process", "entrypoint", fmt.Sprint(entrypointCmd))
 
-	if daemonMode {
-		logger.Info("in daemon mode...")
+	if daemonMode || watchData {
+		if daemonMode {
+			logger.Info("running in watch-for-lease mode")
+		}
+		if watchData {
+			logger.Info("running in watch-for-data mode", "poll-interval", secretPollInterval)
+		}
+
 		cmd := exec.Command(binary, entrypointCmd[1:]...)
-		cmd.Env = append(os.Environ(), sanitized.env...)
+		// Pass only the sanitized environment, same as the exec path below:
+		// the original environment contains secret templates and VAULT_* variables
+		// which must not leak into the child process.
+		cmd.Env = sanitized.env
 		cmd.Stdin = os.Stdin
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 
-		signal.Notify(sigs)
+		signal.Notify(sigs, kubernetesSignals...)
 
 		err = cmd.Start()
 		if err != nil {
-			logger.Error(fmt.Errorf("failed to start process: %w", err).Error(), slog.String("entrypoint", fmt.Sprint(entrypointCmd)))
+			logger.Error("failed to start process", log.Err(err), "entrypoint", fmt.Sprint(entrypointCmd))
 
 			os.Exit(1)
 		}
 
+		watchCtx, watchCancel := context.WithCancel(context.Background())
+		defer watchCancel()
+
+		var restartDueToSecretChange atomic.Bool
+
+		if watchData {
+			go watchSecretsForChanges(
+				watchCtx,
+				client,
+				config,
+				watchedTemplates,
+				envFromPath,
+				initialSecretsHash,
+				secretPollInterval,
+				sigs,
+				&restartDueToSecretChange,
+				logger,
+			)
+		}
+
 		go func() {
 			for sig := range sigs {
-				// We don't want to signal a non-running process.
 				if cmd.ProcessState != nil && cmd.ProcessState.Exited() {
 					break
 				}
 
 				err := cmd.Process.Signal(sig)
 				if err != nil {
-					logger.Warn(fmt.Errorf("failed to signal process: %w", err).Error(), slog.String("signal", sig.String()))
-				} else if sig == syscall.SIGURG {
-					logger.Debug("received signal", slog.String("signal", sig.String()))
-				} else {
-					logger.Info("received signal", slog.String("signal", sig.String()))
+					if errors.Is(err, os.ErrProcessDone) {
+						break
+					}
+
+					logger.Warn("failed to signal process", log.Err(err), "signal", sig.String())
+
+					continue
 				}
+
+				logger.Info("forwarded signal to process", "signal", sig.String())
 			}
 		}()
 
 		err = cmd.Wait()
 
-		close(sigs)
+		watchCancel()
+
+		signal.Stop(sigs)
+		// The sigs channel is deliberately not closed: the watch and renewal
+		// goroutines may still attempt to send to it, and a send to a closed
+		// channel would panic. The process exits shortly anyway.
+
+		if restartDueToSecretChange.Load() {
+			logger.Info("exiting to allow container restart after secret change")
+			_ = os.WriteFile("/dev/termination-log", []byte("secret values changed, restarting container"), 0o666)
+			os.Exit(2)
+		}
 
 		if err != nil {
 			exitCode := -1
@@ -421,16 +579,16 @@ func main() {
 				exitCode = exitError.ExitCode()
 			}
 
-			logger.Error(fmt.Errorf("failed to exec process: %w", err).Error(), slog.String("entrypoint", fmt.Sprint(entrypointCmd)))
+			logger.Error("failed to exec process", log.Err(err), "entrypoint", fmt.Sprint(entrypointCmd))
 
 			os.Exit(exitCode)
 		}
 
 		os.Exit(cmd.ProcessState.ExitCode())
-	} else { //nolint:revive
+	} else {
 		err = syscall.Exec(binary, entrypointCmd, sanitized.env)
 		if err != nil {
-			logger.Error(fmt.Errorf("failed to exec process: %w", err).Error(), slog.String("entrypoint", fmt.Sprint(entrypointCmd)))
+			logger.Error("failed to exec process", log.Err(err), "entrypoint", fmt.Sprint(entrypointCmd))
 
 			os.Exit(1)
 		}

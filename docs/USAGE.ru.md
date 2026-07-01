@@ -264,7 +264,9 @@ Stronghold может использовать различные авториз
 1. В остальных контейнерах оригинальные команды запуска заменяются на запуск файла-инжектора.
 1. Инжектор получает из Vault-совместимого хранилища необходимые данные, используя для подключения сервисный аккаунт приложения.
 1. Инжектор помещает эти переменные в `ENV` процесса.
-1. Инжектор выполняет системный вызов `execve`, запуская оригинальную команду.
+1. Инжектор запускает оригинальную команду. Способ запуска зависит от режима:
+   - По умолчанию инжектор выполняет системный вызов `execve`, заменяя собой текущий процесс — приложение становится PID 1 контейнера.
+   - В режимах мониторинга секретов, при установке аннотации `secrets-store.deckhouse.io/restart-on-secret-change` в значения `watch-for-lease` или  `watch-for-data`, инжектор использует `fork`+`exec`: остаётся родительским процессом контейнера (PID 1), а приложение запускается как дочерний процесс. Это нужно для продления lease и/или периодической проверки значений секретов.
 
 Если в манифесте пода у контейнера отсутствует команда запуска, выполняется извлечение манифеста образа из хранилища образов контейнеров, и команда извлекается из него.
 
@@ -292,6 +294,9 @@ Stronghold может использовать различные авториз
 | `secrets-store.deckhouse.io/log-level` | `info` | Уровень логирования |
 | `secrets-store.deckhouse.io/enable-json-log` | `false` | Включает ведение логов в формате JSON |
 | `secrets-store.deckhouse.io/skip-mutate-containers` | | Список имен контейнеров через пробел, к которым не будет применяться инжектирование |
+| `secrets-store.deckhouse.io/service-account-token-path` | `<service-account-token-volume-name>/token` | Путь к файлу JWT-токена ServiceAccount для аутентификации инжектора в хранилище. |
+| `secrets-store.deckhouse.io/restart-on-secret-change` | `none` | Режим реакции на изменение секретов: `none` — без мониторинга (по умолчанию), `watch-for-lease` — завершить приложение при истечении lease (для динамических секретов, например database), `watch-for-data` — периодически проверять значения секретов и перезапускать контейнер при изменении |
+| `secrets-store.deckhouse.io/secret-poll-interval` | `120s` | Интервал опроса секретов в режиме `watch-for-data` |
 
 Используя инжектор, вы сможете задавать в манифестах пода вместо значений `env` шаблоны, которые будут заменяться на этапе запуска контейнера значениями из хранилища.
 
@@ -323,6 +328,58 @@ env:
     value: secrets-store:demo-kv/data/myapp-secret#DB_PASS#4
 ```
 
+### Шаблоны значений (templater)
+
+Вместо имени ключа во второй части ссылки (`path#key`) можно указать Go-шаблон с разделителями `${` и `}`. Шаблон выполняется по данным секрета, прочитанным из хранилища. Это позволяет собрать значение переменной окружения из нескольких полей одного секрета.
+
+Допустим, в хранилище по пути `demo-kv/data/database/config` лежит секрет:
+
+```json
+{
+  "username": "app",
+  "password": "s3cr3t",
+  "host": "db.example.com",
+  "port": "5432"
+}
+```
+
+Можно задать переменную с URL подключения к базе данных:
+
+```yaml
+env:
+  - name: DATABASE_URL
+    value: secrets-store:demo-kv/data/database/config#postgresql://${.username}:${.password}@${.host}:${.port}/mydb
+```
+
+Для указания конкретной версии секрета добавьте номер версии третьим сегментом через `#`:
+
+```yaml
+env:
+  - name: DATABASE_URL
+    value: secrets-store:demo-kv/data/database/config#postgresql://${.username}:${.password}@${.host}:${.port}/mydb#4
+```
+
+В шаблонах доступны функции [Sprig](https://masterminds.github.io/sprig/), а также функции `file` (чтение содержимого файла) и `accessor` (placeholder для accessor-пути Vault).
+
+### Настройка пути к токену ServiceAccount
+
+По умолчанию инжектор читает JWT-токен ServiceAccount из файла `/var/run/secrets/kubernetes.io/serviceaccount/token`. Если токен смонтирован в другом месте (например, через projected volume или отдельный Secret), укажите путь к файлу с помощью аннотации `secrets-store.deckhouse.io/service-account-token-path`:
+
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: myapp
+  annotations:
+    secrets-store.deckhouse.io/role: "myapp-role"
+    secrets-store.deckhouse.io/service-account-token-path: /var/run/secrets/tokens/vault-token
+spec:
+  serviceAccountName: myapp-sa
+  containers:
+  - name: myapp
+    image: myapp:latest
+```
+
 Шаблон может также находиться в ConfigMap или в Secret и быть подключен с помощью `envFrom`:
 
 ```yaml
@@ -334,6 +391,36 @@ envFrom:
 ```
 
 Инжектирование реальных секретов из Vault-совместимого хранилища выполняется только на этапе запуска приложения. В Secret и ConfigMap будут находиться шаблоны.
+
+### Перезапуск при изменении секретов
+
+По умолчанию (`restart-on-secret-change: none`) инжектор читает секреты один раз при старте контейнера и запускает приложение через `execve`, заменяя собой текущий процесс. Аннотация `secrets-store.deckhouse.io/restart-on-secret-change` включает мониторинг и автоматический перезапуск контейнера; в этом случае приложение запускается через `fork`+`exec`, а инжектор остаётся PID 1 контейнера.
+
+**`watch-for-lease`** — режим для динамических секретов с lease (например, database credentials). Инжектор остаётся родительским процессом, продлевает lease и завершает дочерний процесс при истечении срока действия секрета. Kubernetes перезапускает контейнер, и секреты читаются заново.
+
+**`watch-for-data`** — режим для статических секретов (KV). Инжектор периодически (с интервалом `secret-poll-interval`, по умолчанию `120s`) перечитывает значения секретов, сравнивает их хэш с исходным и при изменении завершает дочерний процесс, после чего выходит сам. Kubernetes перезапускает контейнер целиком, и секреты инжектируются заново. Фактический интервал опроса выбирается при старте случайно в диапазоне ±30% от заданного, поэтому реплики одного приложения замечают изменение секрета в разные моменты и не перезапускаются одновременно. В этом режиме секреты, полученные через POST `>>secrets-store:`
+не учитываются в расчете дайджеста.
+
+Пример для KV-секретов с автоматическим перезапуском при изменении:
+
+```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: myapp
+  annotations:
+    secrets-store.deckhouse.io/role: "myapp-role"
+    secrets-store.deckhouse.io/restart-on-secret-change: "watch-for-data"
+    secrets-store.deckhouse.io/secret-poll-interval: "30s"
+spec:
+  serviceAccountName: myapp-sa
+  containers:
+  - name: myapp
+    image: myapp:latest
+    env:
+    - name: PASSWORD
+      value: secrets-store:demo-kv/data/myapp-secret#DB_PASS
+```
 
 ### Подключение переменных из ветки хранилища
 

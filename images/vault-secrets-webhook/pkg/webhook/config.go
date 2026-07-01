@@ -53,6 +53,7 @@ type VaultConfig struct {
 	EnableJSONLog                 string
 	LogLevel                      string
 	ServiceAccountTokenVolumeName string
+	ServiceAccountTokenPath       string
 	EnvImage                      string
 	EnvImagePullPolicy            corev1.PullPolicy
 	EnvLogServer                  string
@@ -68,6 +69,8 @@ type VaultConfig struct {
 	MutateProbes                  bool
 	Token                         string
 	SkipMutateContainers          []string
+	RestartOnSecretChange         string
+	SecretPollInterval            string
 }
 
 func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig {
@@ -116,12 +119,8 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 		vaultConfig.ClientTimeout, _ = time.ParseDuration(viper.GetString("client_timeout"))
 	}
 
-	if val, ok := annotations[common.ServiceAccountTokenVolumeNameAnnotation]; ok {
-		vaultConfig.ServiceAccountTokenVolumeName = val
-	} else if viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME") != "" {
-		vaultConfig.ServiceAccountTokenVolumeName = viper.GetString("SERVICE_ACCOUNT_TOKEN_VOLUME_NAME")
-	} else {
-		vaultConfig.ServiceAccountTokenVolumeName = "/var/run/secrets/kubernetes.io/serviceaccount"
+	if val, ok := annotations[common.ServiceAccountTokenPathAnnotation]; ok {
+		vaultConfig.ServiceAccountTokenPath = val
 	}
 
 	if val, ok := annotations[common.VaultIgnoreMissingSecretsAnnotation]; ok {
@@ -187,6 +186,23 @@ func parseVaultConfig(obj metav1.Object, ar *model.AdmissionReview) VaultConfig 
 		vaultConfig.MutateProbes, _ = strconv.ParseBool(val)
 	} else {
 		vaultConfig.MutateProbes = false
+	}
+
+	if val, ok := annotations[common.RestartOnSecretChangeAnnotation]; ok {
+		switch val {
+		case "none", "watch-for-lease", "watch-for-data":
+			vaultConfig.RestartOnSecretChange = val
+		default:
+			vaultConfig.RestartOnSecretChange = "none"
+		}
+	} else {
+		vaultConfig.RestartOnSecretChange = "none"
+	}
+
+	if val, ok := annotations[common.SecretPollIntervalAnnotation]; ok {
+		vaultConfig.SecretPollInterval = val
+	} else {
+		vaultConfig.SecretPollInterval = viper.GetString("secret_poll_interval")
 	}
 
 	return vaultConfig

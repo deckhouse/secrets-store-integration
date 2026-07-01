@@ -255,11 +255,18 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 				Name:  "VAULT_JSON_LOG",
 				Value: vaultConfig.EnableJSONLog,
 			},
-			{
-				Name:  "VAULT_CLIENT_TIMEOUT",
-				Value: vaultConfig.ClientTimeout.String(),
-			},
-		}...)
+		{
+			Name:  "VAULT_CLIENT_TIMEOUT",
+			Value: vaultConfig.ClientTimeout.String(),
+		},
+	}...)
+
+		if vaultConfig.ServiceAccountTokenPath != "" {
+			container.Env = append(container.Env, corev1.EnvVar{
+				Name:  "VAULT_JWT_FILE",
+				Value: vaultConfig.ServiceAccountTokenPath,
+			})
+		}
 
 		if vaultConfig.Token != "" {
 			container.Env = append(container.Env, corev1.EnvVar{
@@ -314,6 +321,31 @@ func (mw *MutatingWebhook) mutateContainers(ctx context.Context, containers []co
 				Name:  "VAULT_ENV_FROM_PATH",
 				Value: vaultConfig.VaultEnvFromPath,
 			})
+		}
+
+		switch vaultConfig.RestartOnSecretChange {
+		case "watch-for-lease":
+			container.Env = append(container.Env, []corev1.EnvVar{
+				{
+					Name:  "VAULT_ENV_RESTART_ON_SECRET_CHANGE",
+					Value: "watch-for-lease",
+				},
+				{
+					Name:  "VAULT_ENV_DAEMON",
+					Value: "true",
+				},
+			}...)
+		case "watch-for-data":
+			container.Env = append(container.Env, []corev1.EnvVar{
+				{
+					Name:  "VAULT_ENV_RESTART_ON_SECRET_CHANGE",
+					Value: "watch-for-data",
+				},
+				{
+					Name:  "VAULT_ENV_SECRET_POLL_INTERVAL",
+					Value: vaultConfig.SecretPollInterval,
+				},
+			}...)
 		}
 
 		containers[i] = container
