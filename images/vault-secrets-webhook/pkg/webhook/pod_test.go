@@ -126,6 +126,66 @@ func Test_mutatingWebhook_mutateContainers(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Will inject VAULT_JWT_FILE when service account token path is configured",
+			fields: fields{
+				k8sClient: fake.NewSimpleClientset(),
+				registry: &MockRegistry{
+					Image: v1.Config{},
+				},
+			},
+			args: args{
+				containers: []corev1.Container{
+					{
+						Name:    "MyContainer",
+						Image:   "myimage",
+						Command: []string{"/bin/bash"},
+						Env: []corev1.EnvVar{
+							{
+								Name:  "myvar",
+								Value: "secrets-store:secrets",
+							},
+						},
+					},
+				},
+				vaultConfig: VaultConfig{
+					Addr:                    "addr",
+					SkipVerify:              false,
+					Path:                    "path",
+					Role:                    "role",
+					AuthMethod:              "jwt",
+					IgnoreMissingSecrets:    "ignoreMissingSecrets",
+					VaultEnvPassThrough:     "vaultEnvPassThrough",
+					EnableJSONLog:           "enableJSONLog",
+					ClientTimeout:           10 * time.Second,
+					ServiceAccountTokenPath: "/custom/path/token",
+				},
+			},
+			wantedContainers: []corev1.Container{
+				{
+					Name:         "MyContainer",
+					Image:        "myimage",
+					Command:      []string{"/vault/env-injector"},
+					Args:         []string{"/bin/bash"},
+					VolumeMounts: []corev1.VolumeMount{{Name: "stronghold-env", MountPath: "/vault/"}},
+					Env: []corev1.EnvVar{
+						{Name: "myvar", Value: "secrets-store:secrets"},
+						{Name: "VAULT_ADDR", Value: "addr"},
+						{Name: "VAULT_SKIP_VERIFY", Value: "false"},
+						{Name: "VAULT_AUTH_METHOD", Value: "jwt"},
+						{Name: "VAULT_PATH", Value: "path"},
+						{Name: "VAULT_ROLE", Value: "role"},
+						{Name: "VAULT_IGNORE_MISSING_SECRETS", Value: "ignoreMissingSecrets"},
+						{Name: "VAULT_ENV_PASSTHROUGH", Value: "vaultEnvPassThrough"},
+						{Name: "VAULT_JSON_LOG", Value: "enableJSONLog"},
+						{Name: "VAULT_CLIENT_TIMEOUT", Value: "10s"},
+						{Name: "VAULT_JWT_FILE", Value: "/custom/path/token"},
+					},
+				},
+			},
+			mutated: true,
+			wantErr: false,
+		},
+		{
 			name: "Will mutate container with command, other syntax",
 			fields: fields{
 				k8sClient: fake.NewSimpleClientset(),

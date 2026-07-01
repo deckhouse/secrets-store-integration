@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Flant JSC
+Copyright 2026 Flant JSC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,16 +17,14 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
 	"sync"
 
 	"emperror.dev/errors"
-
-	"github.com/bank-vaults/vault-sdk/vault"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/spf13/cast"
 )
@@ -38,164 +36,45 @@ type SecretRenewer interface {
 }
 
 type Config struct {
-	TransitKeyID         string
-	TransitPath          string
-	TransitBatchSize     int
 	IgnoreMissingSecrets bool
 	DaemonMode           bool
 }
 
 type SecretInjector struct {
-	mu           sync.RWMutex
-	config       Config
-	client       *vault.Client
-	renewer      SecretRenewer
-	logger       *slog.Logger
-	transitCache map[string][]byte
-	secretCache  map[string]map[string]interface{}
+	mu          sync.RWMutex
+	config      Config
+	client      *Client
+	renewer     SecretRenewer
+	logger      Logger
+	secretCache map[string]map[string]interface{}
 }
 
-func NewSecretInjector(config Config, client *vault.Client, renewer SecretRenewer, logger *slog.Logger) SecretInjector {
+func NewSecretInjector(config Config, client *Client, renewer SecretRenewer, logger Logger) SecretInjector {
 	return SecretInjector{
-		config:       config,
-		client:       client,
-		renewer:      renewer,
-		logger:       logger,
-		transitCache: map[string][]byte{},
-		secretCache:  map[string]map[string]interface{}{},
+		config:      config,
+		client:      client,
+		renewer:     renewer,
+		logger:      logger,
+		secretCache: map[string]map[string]interface{}{},
 	}
 }
 
 var inlineMutationRegex = regexp.MustCompile(`\${([>]{0,2}secrets-store:.*?#*}?)}`)
 
-func (i *SecretInjector) FetchTransitSecrets(secrets []string) (map[string][]byte, error) {
-	if len(i.config.TransitKeyID) == 0 {
-		return map[string][]byte{}, errors.Errorf("found encrypted variable, but transit key ID is empty: %s", "todo")
-	}
-
-	if len(secrets) == 0 {
-		return map[string][]byte{}, nil
-	}
-
-	out, err := i.client.Transit.DecryptBatch(i.config.TransitPath, i.config.TransitKeyID, secrets)
-	if err != nil {
-		i.logger.Error(fmt.Sprintf("failed to decrypt variable: %s", err))
-	}
-
-	i.mu.Lock()
-	for k, v := range out {
-		i.transitCache[k] = v
-	}
-	i.mu.Unlock()
-
-	return out, nil
-}
-
-func paginate(secrets []string, batchSize int) [][]string {
-	transitSecrets := [][]string{}
-
-	for i := range secrets {
-		if i%batchSize == 0 {
-			transitSecrets = append(transitSecrets, []string{})
-		}
-
-		index := i / batchSize
-
-		transitSecrets[index] = append(transitSecrets[index], secrets[i])
-	}
-
-	return transitSecrets
-}
-
-func (i *SecretInjector) preprocessTransitSecrets(references *map[string]string, inject SecretInjectorFunc) error {
-	// use set so that we don't have duplicates
-	secretSet := map[string]bool{}
-
-	for _, value := range *references {
-		// decrypts value with Vault Transit Secret Engine
-		if HasInlineVaultDelimiters(value) {
-			for _, vaultSecretReference := range FindInlineVaultDelimiters(value) {
-				if i.client.Transit.IsEncrypted(vaultSecretReference[1]) {
-					secretSet[vaultSecretReference[1]] = true
-				}
-			}
-		} else if i.client.Transit.IsEncrypted(value) {
-			secretSet[value] = true
-		}
-	}
-
-	// convert back to slice & filter out already-cached secrets
-	secrets := make([]string, 0, len(secretSet))
-	i.mu.RLock()
-	for k := range secretSet {
-		if _, cached := i.transitCache[k]; !cached {
-			secrets = append(secrets, k)
-		}
-	}
-	i.mu.RUnlock()
-
-	for _, sec := range paginate(secrets, i.config.TransitBatchSize) {
-		_, err := i.FetchTransitSecrets(sec)
-		if err != nil {
-			if !i.config.IgnoreMissingSecrets {
-				return errors.Wrapf(err, "failed to decrypt secret: %s", sec)
-			}
-
-			i.logger.Error(fmt.Sprintf("failed to decrypt secret: %s", err), slog.Any("secrets", sec))
-		}
-	}
-
-	for name, value := range *references {
-		if HasInlineVaultDelimiters(value) {
-			newValue := value
-			i.mu.RLock()
-			for _, vaultSecretReference := range FindInlineVaultDelimiters(value) {
-				if v, ok := i.transitCache[vaultSecretReference[0]]; ok {
-					newValue = strings.Replace(value, vaultSecretReference[0], string(v), -1)
-				}
-			}
-			i.mu.RUnlock()
-
-			// Only inject the value if its content has been updated using the transit cache
-			if value != newValue {
-				inject(name, value)
-
-				// Delete the key from the references to avoid a double processing by the old logic
-				delete(*references, name)
-			}
-
-			continue
-		}
-		if i.client.Transit.IsEncrypted(value) {
-			i.mu.RLock()
-			v, ok := i.transitCache[value]
-			i.mu.RUnlock()
-			if ok {
-				inject(name, string(v))
-
-				continue
-			}
-		}
-	}
-
-	return nil
-}
-
 func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, inject SecretInjectorFunc) error {
-	err := i.preprocessTransitSecrets(&references, inject)
-	if err != nil && !i.config.IgnoreMissingSecrets {
-		return errors.Wrapf(err, "unable to preprocess transit secrets")
-	}
+	return i.InjectSecretsFromVaultWithContext(context.Background(), references, inject)
+}
 
+func (i *SecretInjector) InjectSecretsFromVaultWithContext(ctx context.Context, references map[string]string, inject SecretInjectorFunc) error {
 	for name, value := range references {
 		if HasInlineVaultDelimiters(value) {
 			for _, vaultSecretReference := range FindInlineVaultDelimiters(value) {
-				mapData, err := i.GetDataFromVault(map[string]string{name: vaultSecretReference[1]})
+				mapData, err := i.GetDataFromVaultWithContext(ctx, map[string]string{name: vaultSecretReference[1]})
 				if err != nil {
 					return err
 				}
 				for _, v := range mapData {
-					value = strings.Replace(value, vaultSecretReference[0], v, -1)
+					value = strings.ReplaceAll(value, vaultSecretReference[0], v)
 				}
 			}
 			inject(name, value)
@@ -228,41 +107,6 @@ func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, in
 			continue
 		}
 
-		// decrypts value with Vault Transit Secret Engine
-		if i.client.Transit.IsEncrypted(value) {
-			if len(i.config.TransitKeyID) == 0 {
-				return errors.Errorf("found encrypted variable, but transit key ID is empty: %s", name)
-			}
-
-			i.mu.RLock()
-			v, ok := i.transitCache[value]
-			i.mu.RUnlock()
-			if ok {
-				inject(name, string(v))
-
-				continue
-			}
-
-			out, err := i.client.Transit.Decrypt(i.config.TransitPath, i.config.TransitKeyID, []byte(value))
-			if err != nil {
-				if !i.config.IgnoreMissingSecrets {
-					return errors.Wrapf(err, "failed to decrypt variable: %s", name)
-				}
-
-				i.logger.Error(fmt.Sprintf("failed to decrypt variable: %s", err), slog.String("variable", name))
-
-				continue
-			}
-
-			i.mu.Lock()
-			i.transitCache[value] = out
-			i.mu.Unlock()
-
-			inject(name, string(out))
-
-			continue
-		}
-
 		split := strings.SplitN(valuePath, "#", 3)
 		valuePath = split[0]
 
@@ -286,7 +130,7 @@ func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, in
 
 		i.mu.RLock()
 		if data = i.secretCache[secretCacheKey]; data == nil {
-			data, err = i.readVaultPath(valuePath, versionOrData, update)
+			data, err = i.readVaultPath(ctx, valuePath, versionOrData, update)
 		}
 		i.mu.RUnlock()
 
@@ -298,12 +142,7 @@ func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, in
 			if !i.config.IgnoreMissingSecrets {
 				return errors.Errorf("path not found: %s", valuePath)
 			}
-
-			i.logger.Warn(
-				fmt.Sprintf(
-					"path not found - We couldn't find a secret path. This is not an error since missing secrets can be ignored according to the configuration you've set annotation."),
-				slog.String("path", valuePath),
-			)
+			i.logger.Warn(fmt.Sprintf("path not found %s", valuePath))
 
 			continue
 		}
@@ -312,7 +151,15 @@ func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, in
 		i.secretCache[secretCacheKey] = data
 		i.mu.Unlock()
 
-		if value, ok := data[key]; ok {
+		tmpl := NewTemplater(DefaultLeftDelimiter, DefaultRightDelimiter)
+
+		if tmpl.IsGoTemplate(key) {
+			value, err := tmpl.Template(key, data)
+			if err != nil {
+				return errors.Wrapf(err, "failed to interpolate template key with vault data: %s", key)
+			}
+			inject(name, value.String())
+		} else if value, ok := data[key]; ok {
 			value, err := cast.ToStringE(value)
 			if err != nil {
 				return errors.Wrap(err, "value can't be cast to a string")
@@ -327,6 +174,10 @@ func (i *SecretInjector) InjectSecretsFromVault(references map[string]string, in
 }
 
 func (i *SecretInjector) InjectSecretsFromVaultPath(paths string, inject SecretInjectorFunc) error {
+	return i.InjectSecretsFromVaultPathWithContext(context.Background(), paths, inject)
+}
+
+func (i *SecretInjector) InjectSecretsFromVaultPathWithContext(ctx context.Context, paths string, inject SecretInjectorFunc) error {
 	vaultPaths := strings.Split(paths, ",")
 
 	for _, path := range vaultPaths {
@@ -339,7 +190,7 @@ func (i *SecretInjector) InjectSecretsFromVaultPath(paths string, inject SecretI
 			version = split[1]
 		}
 
-		data, err := i.readVaultPath(valuePath, version, false)
+		data, err := i.readVaultPath(ctx, valuePath, version, false)
 		if err != nil {
 			return err
 		}
@@ -348,12 +199,7 @@ func (i *SecretInjector) InjectSecretsFromVaultPath(paths string, inject SecretI
 			if !i.config.IgnoreMissingSecrets {
 				return errors.Errorf("path not found: %s", valuePath)
 			}
-
-			i.logger.Warn(
-				fmt.Sprintf(
-					"path not found - We couldn't find a secret path. This is not an error since missing secrets can be ignored according to the configuration you've set annotation."),
-				slog.String("path", valuePath),
-			)
+			i.logger.Warn(fmt.Sprintf("path not found %s", valuePath))
 
 			continue
 		}
@@ -370,7 +216,7 @@ func (i *SecretInjector) InjectSecretsFromVaultPath(paths string, inject SecretI
 	return nil
 }
 
-func (i *SecretInjector) readVaultPath(path, versionOrData string, update bool) (map[string]interface{}, error) {
+func (i *SecretInjector) readVaultPath(ctx context.Context, path, versionOrData string, update bool) (map[string]interface{}, error) {
 	var secretData map[string]interface{}
 
 	var secret *vaultapi.Secret
@@ -383,19 +229,19 @@ func (i *SecretInjector) readVaultPath(path, versionOrData string, update bool) 
 			return nil, errors.Wrap(err, "failed to unmarshal data for writing")
 		}
 
-		secret, err = i.client.RawClient().Logical().Write(path, data)
+		secret, err = i.client.RawClient().Logical().WriteWithContext(ctx, path, data)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to write secret to path: %s", path)
 		}
 	} else {
-		secret, err = i.client.RawClient().Logical().ReadWithData(path, map[string][]string{"version": {versionOrData}})
+		secret, err = i.client.RawClient().Logical().ReadWithDataWithContext(ctx, path, map[string][]string{"version": {versionOrData}})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read secret from path: %s", path)
 		}
 	}
 
 	if i.config.DaemonMode && secret != nil && secret.LeaseDuration > 0 {
-		i.logger.Info("secret has a lease duration, starting renewal", slog.String("path", path), slog.Int("lease-duration", secret.LeaseDuration))
+		i.logger.Info("secret has a lease duration, starting renewal", "path", path, "lease-duration", secret.LeaseDuration)
 
 		err = i.renewer.Renew(path, secret)
 		if err != nil {
@@ -408,7 +254,7 @@ func (i *SecretInjector) readVaultPath(path, versionOrData string, update bool) 
 	}
 
 	for _, warning := range secret.Warnings {
-		i.logger.Warn(warning, slog.String("path", path))
+		i.logger.Warn(warning, "path", path)
 	}
 
 	v2Data, ok := secret.Data["data"]
@@ -431,16 +277,16 @@ func (i *SecretInjector) readVaultPath(path, versionOrData string, update bool) 
 		// Handle the case where "destroyed" key is not present or has an unexpected type.
 		destroyed, _ := metadata["destroyed"].(bool)
 		if destroyed {
-			i.logger.Warn("version of secret has been permanently destroyed", slog.String("path", path), slog.String("version", versionOrData))
+			i.logger.Warn("version of secret has been permanently destroyed", "path", path, "version", versionOrData)
 		}
 
 		// Check if a given version of a path still exists
 		if deletionTime, ok := metadata["deletion_time"].(string); ok && deletionTime != "" {
 			i.logger.Warn(
 				"cannot find data for path, given version has been deleted",
-				slog.String("path", path),
-				slog.String("version", versionOrData),
-				slog.String("deletion-time", deletionTime),
+				"path", path,
+				"version", versionOrData,
+				"deletion-time", deletionTime,
 			)
 		}
 	} else {
@@ -448,6 +294,27 @@ func (i *SecretInjector) readVaultPath(path, versionOrData string, update bool) 
 	}
 
 	return secretData, nil
+}
+
+func IsValidPrefix(value string) bool {
+	return strings.HasPrefix(value, "secrets-store:") || strings.HasPrefix(value, ">>secrets-store:")
+}
+
+// isUpdateReference reports whether resolving the value performs a Vault write
+// (">>secrets-store:..." either as a plain value or inside inline delimiters).
+// Such references must not be re-resolved by the secret change watcher.
+func isUpdateReference(value string) bool {
+	if strings.HasPrefix(value, ">>secrets-store:") {
+		return true
+	}
+
+	for _, match := range FindInlineVaultDelimiters(value) {
+		if strings.HasPrefix(match[1], ">>") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func HasInlineVaultDelimiters(value string) bool {
@@ -459,11 +326,15 @@ func FindInlineVaultDelimiters(value string) [][]string {
 }
 
 func (i *SecretInjector) GetDataFromVault(data map[string]string) (map[string]string, error) {
+	return i.GetDataFromVaultWithContext(context.Background(), data)
+}
+
+func (i *SecretInjector) GetDataFromVaultWithContext(ctx context.Context, data map[string]string) (map[string]string, error) {
 	vaultData := make(map[string]string, len(data))
 
 	inject := func(key, value string) {
 		vaultData[key] = value
 	}
 
-	return vaultData, i.InjectSecretsFromVault(data, inject)
+	return vaultData, i.InjectSecretsFromVaultWithContext(ctx, data, inject)
 }
