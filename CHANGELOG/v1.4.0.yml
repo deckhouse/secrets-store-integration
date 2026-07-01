@@ -1,0 +1,8 @@
+Changes:
+- Added secret refresh mode and lease refresh mode for env-injector
+- Added ability to set service-account-token-path
+- Changed slog to deckhouse logger
+- Added secret templating
+- Removed bank-vaults dependencies
+- Removed custom transit engine secret decode
+- Updated documentation, added usage examples
