@@ -117,10 +117,11 @@ spec:
     spec:
       serviceAccountName: vault-csi-provider
       automountServiceAccountToken: true
-      {{- include "ssi.imagePullSecrets" . | nindent 6 }}
       {{- include "helm_lib_tolerations" (tuple . "any-node") | nindent 6 }}
       {{- include "helm_lib_priority_class" (tuple . "cluster-medium") | nindent 6 }}
       {{- include "helm_lib_module_pod_security_context_run_as_user_root" . | nindent 6 }}
+      imagePullSecrets:
+      - name: module-registry
       containers:
         - name: vault-csi-provider
           image: {{ include "helm_lib_module_image" (list . "vaultCsiProvider") }}

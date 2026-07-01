@@ -1,14 +1,3 @@
-{{- define "ssi.imagePullSecrets" -}}
-{{- if .Values.secretsStoreIntegration.registry }}
-  {{- with .Values.secretsStoreIntegration.registry.dockercfg }}
-imagePullSecrets:
-- name: module-registry
-  {{- end }}
-{{- else }}
-imagePullSecrets:
-- name: deckhouse-registry
-{{- end }}
-{{- end }}
 {{- define "module_container_security_context_readonly_fs_flexible" -}}
 {{- $uid  := 64535 -}}
 {{- if hasKey . "uid" -}}
