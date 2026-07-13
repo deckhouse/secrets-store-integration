@@ -4,6 +4,9 @@ kind: MutatingWebhookConfiguration
 metadata:
   name: d8-{{ $.Chart.Name }}-mutating-webhook-configuration
   {{- include "helm_lib_module_labels" (list . (dict "app" "vault-secrets-webhook")) | nindent 2 }}
+  annotations:
+    werf.io/deploy-dependency-deployment: state=ready,kind=Deployment,name=webhook,namespace=d8-{{ $.Chart.Name }}
+    werf.io/deploy-dependency-service: state=present,kind=Service,name=vault-secrets-webhook,namespace=d8-{{ $.Chart.Name }}
 webhooks:
 - name: pods.vault-secrets-webhook.admission.deckhouse.io
   admissionReviewVersions: ["v1"]
