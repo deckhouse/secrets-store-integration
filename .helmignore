@@ -3,6 +3,7 @@ docs
 enabled
 hooks
 images
+known_vulnerabilities.vex
 lib
 Makefile
 openapi

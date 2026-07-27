@@ -1,0 +1,30 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "vex-secrets-store-csi-driver-2026-07-27",
+  "author": "Deckhouse <contact@deckhouse.io>",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "@id": "https://pkg.go.dev/vuln/GO-2026-5932",
+        "name": "GO-2026-5932",
+        "description": "The golang.org/x/crypto/openpgp package is unmaintained"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/golang.org/x/crypto@v0.53.0",
+          "subcomponents": [
+            {
+              "@id": "pkg:gobinary/usr/bin/secrets-store-csi-driver"
+            }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The golang.org/x/crypto/openpgp package is marked as unmaintained. In secrets-store-csi-driver, the affected package is not in the executable path: secrets-store-csi-driver does not import golang.org/x/crypto/openpgp.",
+      "timestamp": "2026-07-27T12:19:07Z"
+    }
+  ],
+  "timestamp": "2026-07-27T12:19:07Z"
+}
