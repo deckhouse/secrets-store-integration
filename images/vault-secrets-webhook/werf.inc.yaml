@@ -53,3 +53,5 @@ imageSpec:
   config:
     entrypoint:
     - /usr/bin/{{ .ImageName }}
+---
+{{- include "vex mitigation" (list $ $.ImageName) }}
