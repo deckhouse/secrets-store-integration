@@ -1,0 +1,5 @@
+[allowlist]
+# Go module checksums - публичные хеши зависимостей, безопасно
+regexes = [
+    '''h1:[A-Za-z0-9+/=]{40,}''',
+]
