@@ -1,10 +1,13 @@
+PYTHON ?= $(shell test -x .venv/bin/python && echo .venv/bin/python || echo python3)
+
 .PHONY: changelog
 changelog:
-	python3 scripts/generate_release_notes.py
+	$(PYTHON) scripts/generate_release_notes.py
+	cp "$$(printf '%s\n' CHANGELOG/v*.yml | grep -v '\.ru\.yml$$' | sort -V | tail -n1)" changelog.yaml
 
 .PHONY: changelog-diff
 changelog-diff:
-	python3 scripts/changelog_diff.py $(TAG)
+	$(PYTHON) scripts/changelog_diff.py $(TAG)
 
 .PHONY: update-base-images-versions
 update-base-images-versions:

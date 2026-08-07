@@ -9,5 +9,9 @@ import:
     after: install
     includePaths:
       - version.json
-      - changelog.yaml
+git:
+  - add: /
+    to: /
+    includePaths:
       - module.yaml
+      - changelog.yaml
