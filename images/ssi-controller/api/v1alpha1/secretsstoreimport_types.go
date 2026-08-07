@@ -58,7 +58,7 @@ type SecretsStoreImportSpec struct {
 	// +kubebuilder:validation:Pattern:=^[-_.a-zA-Z0-9]+$
 	Role string `json:"role"`
 	// Auth mount path in Vault-compatible storage. If omitted value from ModuleConfig will be used.
-	// +kubebuilder:validation:Pattern:=^[A-Za-z0-9-_]+$
+	// +kubebuilder:validation:Pattern:=^[-_./A-Za-z0-9]+$
 	AuthPath string `json:"authPath,omitempty"`
 	// Namespace where secret is stored. If omitted value from ModuleConfig will be used.
 	// +kubebuilder:validation:Pattern:="^[-_./a-zA-Z0-9]+$"

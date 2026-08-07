@@ -46,14 +46,14 @@ properties:
           If this parameter is not specified, the system ca-certificates are used.
       authPath:
         type: string
-        pattern: ^[A-Za-z0-9-_]+$
+        pattern: ^[-_./A-Za-z0-9]+$
         default: kubernetes
         description: |
           Path in Stronghold or Vault that is used to authenticate a Kubernetes cluster.
-        x-examples: [ "kubernetes", "kube-dev" ]
+        x-examples: [ "kubernetes", "kube-dev", "kube/sub-path" ]
       namespace:
         type: string
-        pattern: ^[A-Za-z0-9-_\/]+$
+        pattern: ^[-_./A-Za-z0-9]+$
         description: |
           Namespace in a Vault-compatible store.
         x-examples: [ "ns1", "ns1/sub-ns2" ]
