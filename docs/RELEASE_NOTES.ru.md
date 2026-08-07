@@ -2,6 +2,15 @@
 title: "Релизы"
 ---
 
+## v1.3.20
+
+* Обновлены base images до v1.3.26
+* Ослаблены ограничения на mount-path для именования kubernetes-аутентификации (authPath) и полного пути namespace
+* Добавлены VEX-предикаты для GO-2026-5932
+* Исправлены CVE - GHSA-gcjh-h69q-9w9g, CVE-2026-46600, CVE-2026-56852, GHSA-hrxh-6v49-42gf, CVE-2026-33186, CVE-2025-15558, CVE-2026-25679, CVE-2026-34986, CVE-2026-39883, CVE-2026-32280, CVE-2026-32282, CVE-2026-42504
+* Обновлен генератор changelog
+* Добавлены аннотации зависимости werf deploy в конфигурацию vault secrets mutating webhook
+
 ## v1.3.19
 
 * Исправлено создание registry-secret

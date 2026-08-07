@@ -2,6 +2,15 @@
 title: "Release Notes"
 ---
 
+## v1.3.20
+
+* Updated base images to v1.3.26
+* Loosened restrictions on mount-path for kubernetes authentication naming (authPath) and namespace full path
+* VEX predicates added for GO-2026-5932
+* CVEs fixed – GHSA-gcjh-h69q-9w9g, CVE-2026-46600, CVE-2026-56852, GHSA-hrxh-6v49-42gf, CVE-2026-33186, CVE-2025-15558, CVE-2026-25679, CVE-2026-34986, CVE-2026-39883, CVE-2026-32280, CVE-2026-32282, CVE-2026-42504
+* Updated changelog generator
+* Added werf deploy dependency annotations to vault secrets mutating webhook configuration
+
 ## v1.3.19
 
 * Simplify registry secret creation
