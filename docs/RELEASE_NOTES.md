@@ -2,6 +2,13 @@
 title: "Release Notes"
 ---
 
+## v1.4.2
+
+* Loosened restrictions on mount-path for kubernete authentication naming (authPath) and namespace full path
+* Updated base images to v1.3.26
+* VEX predicates added for GO-2026-5932
+* CVEs fixed – GHSA-gcjh-h69q-9w9g, CVE-2026-46600, CVE-2026-56852, GHSA-hrxh-6v49-42gf
+
 ## v1.4.1
 
 * Updated base images to v1.3.5
