@@ -5,8 +5,7 @@ env:
   WERF_FINAL_IMAGES_ONLY: "true"
 
 on:
-  pull_request:
-  # call from trivy_image_check.yaml, which in turn call from pull_request
+  # pull_request is triggered via cve_scan.yml (workflow_call) so scan waits for build
   push:
     branches:
       - main
@@ -46,6 +45,12 @@ jobs:
           module_tag: ${{ env.MODULES_MODULE_TAG }}
           registry_user: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
+          source_repo: ${{ secrets.SOURCE_REPO }}
+          source_repo_ssh_key: ${{ secrets.SOURCE_REPO_SSH_KEY }}
+          svace_enabled: ${{ contains(github.event.pull_request.labels.*.name, 'analyze/svace') || inputs.svace_enabled == true }}
+          svace_analyze_host: "${{ secrets.SVACE_ANALYZE_HOST }}"
+          svace_analyze_ssh_user: "${{ secrets.SVACE_ANALYZE_SSH_USER }}"
+          svace_analyze_ssh_key: "${{ secrets.SVACE_ANALYZE_SSH_PRIVATE_KEY }}"
 
   analyze_build:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'analyze/svace') || inputs.svace_enabled == true }}

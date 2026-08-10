@@ -24,10 +24,15 @@ on:
         required: false
 
 jobs:
+  build_dev:
+    uses: ./.github/workflows/build_dev.yml
+    secrets: inherit
+
   cve_scan_on_pr:
     if: github.event_name == 'pull_request'
     name: CVE scan for PR
     runs-on: [self-hosted, regular]
+    needs: [build_dev]
     steps:
       - uses: actions/checkout@v5
       - uses: imjasonh/setup-crane@v0.4
@@ -49,6 +54,7 @@ jobs:
     if: github.event_name != 'pull_request'
     name: Regular CVE scan
     runs-on: [self-hosted, regular]
+    needs: [build_dev]
     steps:
       - uses: actions/checkout@v5
       - uses: imjasonh/setup-crane@v0.4
