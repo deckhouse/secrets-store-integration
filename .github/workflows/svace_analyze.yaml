@@ -3,6 +3,7 @@ name: Svace analyze
 on:
   schedule:
     - cron: "0 12 * * 6" # Regular static analysis
+  workflow_dispatch:
 
 jobs:
   build_dev:
