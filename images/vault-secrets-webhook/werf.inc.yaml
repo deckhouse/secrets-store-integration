@@ -19,7 +19,7 @@ shell:
   - touch /src/.nodata
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: builder/golang
+fromImage: builder/golang-alt
 final: false
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
@@ -32,10 +32,8 @@ shell:
   install:
   - cd /src
   - export GOPROXY=$(cat /run/secrets/GOPROXY) GOOS=linux GOARCH=amd64 CGO_ENABLED=0
-  - go build -ldflags="-s -w" -o {{ .ImageName }}
-  - chown 64535:64535 {{ .ImageName }}
-  - chmod 0700 {{ .ImageName }}
-
+  - |
+    {{- include "image-build.build" (set $ "BuildCommand" (printf `go build -ldflags="-s -w" -o %s` $.ImageName)) | nindent 4 }}
 secrets:
 - id: GOPROXY
   value: {{ .GOPROXY }}
