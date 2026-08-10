@@ -1,0 +1,16 @@
+diff --git a/internal/provider/provider.go b/internal/provider/provider.go
+index 00198bf..4a909c1 100644
+--- a/internal/provider/provider.go
++++ b/internal/provider/provider.go
+@@ -115,7 +115,10 @@ func (p *provider) getSecret(ctx context.Context, client *vaultclient.Client, se
+ 		if err != nil {
+ 			return nil, fmt.Errorf("couldn't read secret %q: %w", secretConfig.ObjectName, err)
+ 		}
+-		if secret == nil || secret.Data == nil {
++		if secret == nil {
++			return nil, fmt.Errorf("empty response from %q", secretConfig.SecretPath)
++		}
++		if secret.Data == nil {
+ 			return nil, fmt.Errorf("empty response from %q, warnings: %v", secretConfig.SecretPath, secret.Warnings)
+ 		}
+ 
