@@ -5,8 +5,7 @@ env:
   WERF_FINAL_IMAGES_ONLY: "true"
 
 on:
-  pull_request:
-  # call from trivy_image_check.yaml, which in turn call from pull_request
+  # pull_request is triggered via cve_scan.yml (workflow_call) so scan waits for build
   push:
     branches:
       - main
