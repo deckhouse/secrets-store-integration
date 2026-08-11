@@ -30,7 +30,7 @@ jobs:
         if: ${{ github.ref_name == 'main' }}
         run: |
           echo "MODULES_MODULE_TAG=${{ github.ref_name }}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - uses: deckhouse/modules-actions/setup@v5
