@@ -14,7 +14,7 @@ jobs:
     runs-on: [self-hosted, regular]
     name: Build and Push CE
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - uses: deckhouse/modules-actions/setup@v5
@@ -40,7 +40,7 @@ jobs:
     runs-on: [self-hosted, regular]
     name: Build and Push BE
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - uses: deckhouse/modules-actions/setup@v5
@@ -66,7 +66,7 @@ jobs:
     runs-on: [self-hosted, regular]
     name: Build and Push SE
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - uses: deckhouse/modules-actions/setup@v4
