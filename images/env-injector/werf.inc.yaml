@@ -50,4 +50,4 @@ imageSpec:
     entrypoint:
     - /usr/bin/{{ .ImageName }}
 ---
-{{- include "vex mitigation" (list $ $.ImageName) }}
+{{- include "vex mitigation" (list $ (printf "%s%s" .ModuleNamePrefix .ImageName)) }}
