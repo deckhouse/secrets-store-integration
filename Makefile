@@ -13,3 +13,15 @@ changelog-diff:
 update-base-images-versions:
 	##~ Options: version=vMAJOR.MINOR.PATCH
 	cd .werf && curl --fail -sSLO https://fox.flant.com/api/v4/projects/deckhouse%2Fcontainer-base%2Fbase-images/packages/generic/base_images/${version}/base_images.yml
+
+.PHONY: helmignore
+helmignore:
+	@{ \
+		echo '.*'; \
+		for entry in $$(ls); do \
+			case $$entry in \
+				Chart.yaml|templates|monitoring|charts) continue ;; \
+				*) printf '%s\n' "$$entry" ;; \
+			esac; \
+		done; \
+	} > .helmignore

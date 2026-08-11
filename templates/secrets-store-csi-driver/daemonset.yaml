@@ -204,7 +204,7 @@ spec:
           args:
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--nodeid=$(KUBE_NODE_NAME)"
-            - "--provider-volume=/var/run/secrets-store-csi-providers"
+            - "--provider-volume=/run/secrets-store-csi-providers"
             - "--metrics-addr=127.0.0.1:8095"
             - "--enable-secret-rotation=true"
             - "--rotation-poll-interval=120s"
@@ -237,7 +237,7 @@ spec:
               mountPath: /var/lib/kubelet/pods
               mountPropagation: Bidirectional
             - name: providers-dir
-              mountPath: /var/run/secrets-store-csi-providers
+              mountPath: /run/secrets-store-csi-providers
           resources:
             requests:
               {{- include "helm_lib_module_ephemeral_storage_only_logs" . | nindent 14 }}
