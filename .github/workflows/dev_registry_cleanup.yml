@@ -10,13 +10,13 @@ jobs:
     runs-on: [self-hosted, regular]
     name: Cleanup images
     steps:
-      - uses: actions/checkout@v5
-      - uses: deckhouse/modules-actions/setup@v5
+      - uses: actions/checkout@v6
+      - uses: deckhouse/modules-actions/setup@v16
         with:
           registry: ${{ vars.DEV_REGISTRY }}
           registry_login: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
-      - uses: deckhouse/modules-actions/cleanup@v5
+      - uses: deckhouse/modules-actions/cleanup@v16
         with:
           module_source: ${{ vars.DEV_MODULE_SOURCE }}
           module_name: ${{ vars.MODULE_NAME }}
