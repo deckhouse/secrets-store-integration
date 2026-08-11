@@ -32,11 +32,10 @@ shell:
   install:
   - cd /src
   - export GOPROXY=$(cat /run/secrets/GOPROXY) GOOS=linux GOARCH=amd64 CGO_ENABLED=0
-  - go build -ldflags="-s -w" -o /{{ .ImageName }}
-  - chown 64535:64535 /{{ .ImageName }}
-  - chmod 0700 /{{ .ImageName }}
-  - cd /
-  - rm -rf /src
+  - go build -ldflags="-s -w" -o {{ .ImageName }}
+  - chown 64535:64535 {{ .ImageName }}
+  - chmod 0700 {{ .ImageName }}
+
 secrets:
 - id: GOPROXY
   value: {{ .GOPROXY }}
@@ -47,10 +46,10 @@ git:
 {{- include "image mount points" . }}
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-  add: /{{ .ImageName }}
-  to: /{{ .ImageName }}
+  add: /src/{{ .ImageName }}
+  to: /usr/bin/{{ .ImageName }}
   before: setup
 imageSpec:
   config:
     entrypoint:
-    - /{{ .ImageName }}
+    - /usr/bin/{{ .ImageName }}

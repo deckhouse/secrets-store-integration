@@ -104,8 +104,6 @@ spec:
       containers:
       - name: ssi-controller
         {{- include "helm_lib_module_container_security_context_pss_restricted_flexible" (dict "ro" true "seccompProfile" true) | nindent 8 }}
-        command:
-        - /bin/ssi-controller
         args:
         - -leader-elect
         image: {{ include "helm_lib_module_image" (list . "ssiController") }}
