@@ -2,6 +2,36 @@
 title: "Release Notes"
 ---
 
+## v1.3.21
+
+### Highlights
+
+* Fixed CVE GHSA-hrxh-6v49-42gf
+* Fixed vault-csi-provider handling of empty Vault compatible secret storage responses
+* Improved release validation and vulnerability scanning
+
+### Improvements
+
+* Improved image build compatibility and release packaging
+* Updated mount point handling for CSI components
+* Improved vulnerability scanning for release images
+
+### Fixes
+
+* Fixed vault-csi-provider handling of empty secret responses
+* Fixed mountpoint template handling
+* Replaced the CSI provider path from `/var/run/secrets-store-csi-providers` to `/run/secrets-store-csi-providers`
+* Updated CSI driver and vault-csi-provider mount points
+
+### Security updates
+
+* Fixed CVE GHSA-hrxh-6v49-42gf
+
+### Dependencies
+
+* Updated build, workflow, and release dependencies
+* Updated `google.golang.org/grpc` to v1.82.1
+
 ## v1.3.20
 
 * Updated base images to v1.3.26
