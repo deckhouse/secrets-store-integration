@@ -12,10 +12,11 @@ git:
         - '**/*.go'
 shell:
   install:
-    - echo "src artifact"
+  - echo "Patches here"
+  - touch /src/.nodata
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: {{ eq $.SVACE_ENABLED "false" | ternary "builder/golang-alpine" "builder/alt-go-svace" }}
+fromImage: builder/golang-alt
 final: false
 import:
   - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
