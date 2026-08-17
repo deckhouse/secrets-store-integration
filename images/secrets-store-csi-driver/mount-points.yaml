@@ -2,3 +2,4 @@ dirs:
   - /csi
   - /var/lib/kubelet/pods
   - /run/secrets-store-csi-providers
+  - /registration
