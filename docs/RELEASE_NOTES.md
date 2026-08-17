@@ -2,6 +2,10 @@
 title: "Release Notes"
 ---
 
+## v1.4.3
+
+* Updated base images to v2.1.2
+
 ## v1.4.2
 
 * Loosened restrictions on mount-path for kubernete authentication naming (authPath) and namespace full path
