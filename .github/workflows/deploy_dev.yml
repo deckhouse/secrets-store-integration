@@ -30,22 +30,22 @@ on:
 
 jobs:
   deploy-dev:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, regular]
     name: Deploy dev
     steps:
-      - uses: actions/checkout@v4
-      - uses: deckhouse/modules-actions/setup@v4
+      - uses: actions/checkout@v6
+      - uses: deckhouse/modules-actions/setup@v16
         with:
           registry: ${{ vars.DEV_REGISTRY }}
           registry_login: ${{ vars.DEV_MODULES_REGISTRY_LOGIN }}
           registry_password: ${{ secrets.DEV_MODULES_REGISTRY_PASSWORD }}
       - if: ${{ github.event.inputs.enableBuild == 'true' }}
-        uses: deckhouse/modules-actions/build@v4
+        uses: deckhouse/modules-actions/build@v16
         with:
           module_source: "${{ vars.DEV_MODULE_SOURCE }}"
           module_name: ${{ vars.MODULE_NAME }}
           module_tag: $(echo pr${{ github.ref_name }} | sed 's/\/.*//g')
-      - uses: deckhouse/modules-actions/deploy@v4
+      - uses: deckhouse/modules-actions/deploy@v16
         with:
           module_source: ${{ vars.DEV_MODULE_SOURCE }}
           module_name: ${{ vars.MODULE_NAME }}

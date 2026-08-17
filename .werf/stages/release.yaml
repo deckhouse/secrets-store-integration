@@ -4,6 +4,14 @@ image: release-channel-version
 fromImage: builder/scratch
 import:
   - image: images-digests-and-version
-    add: /version.json
-    to: /version.json
+    add: /
+    to: /
     after: install
+    includePaths:
+      - version.json
+git:
+  - add: /
+    to: /
+    includePaths:
+      - module.yaml
+      - changelog.yaml

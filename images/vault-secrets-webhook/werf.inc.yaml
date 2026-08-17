@@ -13,9 +13,13 @@ git:
   - '**/*_test.go'
   - scripts
   - werf.inc.yaml
+shell:
+  install:
+  - echo "Patches here"
+  - touch /src/.nodata
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: builder/golang-alpine
+fromImage: builder/golang-alt
 final: false
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
@@ -28,11 +32,8 @@ shell:
   install:
   - cd /src
   - export GOPROXY=$(cat /run/secrets/GOPROXY) GOOS=linux GOARCH=amd64 CGO_ENABLED=0
-  - go build -ldflags="-s -w" -o /{{ .ImageName }}
-  - chown 64535:64535 /{{ .ImageName }}
-  - chmod 0700 /{{ .ImageName }}
-  - cd /
-  - rm -rf /src
+  - |
+    {{- include "image-build.build" (set $ "BuildCommand" (printf `go build -ldflags="-s -w" -o %s` $.ImageName)) | nindent 4 }}
 secrets:
 - id: GOPROXY
   value: {{ .GOPROXY }}
@@ -43,10 +44,12 @@ git:
 {{- include "image mount points" . }}
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-  add: /{{ .ImageName }}
-  to: /{{ .ImageName }}
+  add: /src/{{ .ImageName }}
+  to: /usr/bin/{{ .ImageName }}
   before: setup
 imageSpec:
   config:
     entrypoint:
-    - /{{ .ImageName }}
+    - /usr/bin/{{ .ImageName }}
+---
+{{- include "vex mitigation" (list $ (printf "%s%s" .ModuleNamePrefix .ImageName)) }}
