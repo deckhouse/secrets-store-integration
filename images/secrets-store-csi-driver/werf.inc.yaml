@@ -11,7 +11,14 @@ git:
   excludePaths:
   - .*
   - '**/*_test.go'
-  - hack
+  - secrets-store-csi-driver/hack
+  - secrets-store-csi-driver/img
+  - secrets-store-csi-driver/docs
+  - secrets-store-csi-driver/config
+  - secrets-store-csi-driver/charts
+  - secrets-store-csi-driver/docker
+  - secrets-store-csi-driver/deploy
+  - secrets-store-csi-driver/manifest_staging
   - werf.inc.yaml
 shell:
   install:
@@ -19,7 +26,7 @@ shell:
     - git apply /src/patches/*.patch --verbose
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-fromImage: builder/golang-alpine
+fromImage: builder/golang-alt
 final: false
 import:
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-src-artifact
@@ -33,34 +40,36 @@ shell:
   - cd /src
   - export GOPROXY=$(cat /run/secrets/GOPROXY) GOOS=linux GOARCH=amd64 CGO_ENABLED=0
   - export LDFLAGS="-s -w -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildVersion=v1.4.0 -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.Vcs=fe"
-  - go build -ldflags="$LDFLAGS" -o /{{ .ImageName }} ./cmd/secrets-store-csi-driver
-  - chown 64535:64535 /{{ .ImageName }}
-  - chmod 0700 /{{ .ImageName }}
-  - cd /
-  - rm -rf /src
+  - |
+    {{- include "image-build.build" (set $ "BuildCommand" (printf `go build -ldflags="$LDFLAGS" -o %s ./cmd/secrets-store-csi-driver` $.ImageName)) | nindent 4 }}
 secrets:
 - id: GOPROXY
   value: {{ .GOPROXY }}
+---
+image: ad-hoc/tools/util-linux
+from: registry.deckhouse.io/base_images@sha256:cdfc92bd8bd683bd8308f9ba29bfd2c4d41f17e1267a1d6c0dfcc0a01c561371
+final: false
 ---
 image: {{ .ModuleNamePrefix }}{{ .ImageName }}
 fromImage: base/distroless
 git:
 {{- include "image mount points" . }}
 import:
-- image: tools/util-linux
+- image: ad-hoc/tools/util-linux
   add: /bin/mount
-  to: /bin/mount
+  to: /usr/bin/mount
   before: setup
-- image: tools/util-linux
+- image: ad-hoc/tools/util-linux
   add: /bin/umount
-  to: /bin/umount
+  to: /usr/bin/umount
   before: setup
 - image: {{ .ModuleNamePrefix }}{{ .ImageName }}-artifact
-  add: /{{ .ImageName }}
-  to: /{{ .ImageName }}
+  add: /src/{{ .ImageName }}
+  to: /usr/bin/{{ .ImageName }}
   before: setup
 imageSpec:
   config:
     entrypoint:
-    - /{{ .ImageName }}
-
+    - /usr/bin/{{ .ImageName }}
+---
+{{- include "vex mitigation" (list $ (printf "%s%s" .ModuleNamePrefix .ImageName)) }}
