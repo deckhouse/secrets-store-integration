@@ -15,3 +15,8 @@ git:
     includePaths:
       - module.yaml
       - changelog.yaml
+      - docs
+      - openapi
+      - crds
+    excludePaths:
+      - docs/internal
