@@ -2,7 +2,7 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "vex-vault-secrets-webhook-2026-07-27",
   "author": "Deckhouse <contact@deckhouse.io>",
-  "version": 1,
+  "version": 2,
   "statements": [
     {
       "vulnerability": {
@@ -12,7 +12,7 @@
       },
       "products": [
         {
-          "@id": "pkg:golang/golang.org/x/crypto@v0.53.0",
+          "@id": "pkg:golang/golang.org/x/crypto@v0.56.0",
           "subcomponents": [
             {
               "@id": "pkg:gobinary/usr/bin/vault-secrets-webhook"
@@ -23,8 +23,8 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "The golang.org/x/crypto/openpgp package is marked as unmaintained. In vault-secrets-webhook, the affected package is not in the executable path: vault-secrets-webhook does not import golang.org/x/crypto/openpgp.",
-      "timestamp": "2026-07-27T12:19:07Z"
+      "timestamp": "2026-09-15T12:23:12Z"
     }
   ],
-  "timestamp": "2026-07-27T12:19:07Z"
+  "timestamp": "2026-09-15T12:23:12Z"
 }
