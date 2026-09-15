@@ -2,6 +2,27 @@
 title: "Release Notes"
 ---
 
+## v1.3.22
+
+### Highlights
+
+* This release fixes CVE-2026-56854, CVE-2026-56855, CVE-2026-78662, CVE-2026-84304, CVE-2026-84445, CVE-2026-84303
+* Updated base images to v3.0.2
+* Minor CI and build pipeline improvements
+
+### Improvements
+
+* Updated the dev deployment CI workflow
+
+### Security updates
+
+* Fixed CVE-2026-56854, CVE-2026-56855, CVE-2026-78662, CVE-2026-84304, CVE-2026-84445, CVE-2026-84303
+* Updated base images to v3.0.2
+
+### Docs
+
+* Updated bundled images content used for documentation and AI workflows
+
 ## v1.3.21
 
 ### Highlights
