@@ -143,6 +143,90 @@ def get_changelog_files(changelog_dir: str) -> Tuple[List[str], List[str]]:
     return en_files, ru_files
 
 
+# Ordered release-notes sections (EN key, RU key, heading EN, heading RU).
+# Highlights is required for categorized changelogs; other sections are optional.
+# Legacy flat "Changes"/"Изменения" remain supported when no category keys are present.
+_CHANGELOG_SECTIONS = (
+    ("Highlights", "Ключевые изменения", "Highlights", "Ключевые изменения"),
+    ("New features", "Новый функционал", "New features", "Новый функционал"),
+    ("Improvements", "Улучшения", "Improvements", "Улучшения"),
+    ("Fixes", "Исправления", "Fixes", "Исправления"),
+    ("Security updates", "Обновления безопасности", "Security updates", "Обновления безопасности"),
+    ("Breaking changes", "Несовместимые изменения", "Breaking changes", "Несовместимые изменения"),
+    ("Upgrade notes", "Рекомендации по обновлению", "Upgrade notes", "Рекомендации по обновлению"),
+    ("Known issues", "Известные ограничения", "Known issues", "Известные ограничения"),
+    ("Docs", "Документация", "Docs", "Документация"),
+    ("Dependencies", "Зависимости", "Dependencies", "Зависимости"),
+)
+
+_REQUIRED_SECTION_EN = "Highlights"
+_REQUIRED_SECTION_RU = "Ключевые изменения"
+
+
+def _section_keys(is_russian: bool) -> Tuple[str, ...]:
+    idx = 1 if is_russian else 0
+    return tuple(section[idx] for section in _CHANGELOG_SECTIONS)
+
+
+def _append_change_items(content: List[str], items) -> None:
+    if isinstance(items, list):
+        for item in items:
+            content.append(f"* {item}")
+    elif items:
+        content.append(f"* {items}")
+
+
+def _section_has_items(items) -> bool:
+    if items is None:
+        return False
+    if isinstance(items, list):
+        return len(items) > 0
+    return bool(items)
+
+
+def changelog_uses_categories(changelog_data: Dict, is_russian: bool = False) -> bool:
+    return any(key in changelog_data for key in _section_keys(is_russian))
+
+
+def validate_required_sections(
+    filepath: str, changelog_data: Dict, is_russian: bool = False
+) -> Optional[str]:
+    """Return an error message if a categorized changelog misses required sections."""
+    if not changelog_uses_categories(changelog_data, is_russian=is_russian):
+        return None
+    required = _REQUIRED_SECTION_RU if is_russian else _REQUIRED_SECTION_EN
+    items = changelog_data.get(required)
+    if not _section_has_items(items):
+        return (
+            f"ERROR: {filepath}: required section {required!r} is missing or empty."
+        )
+    return None
+
+
+def append_changelog_sections(
+    content: List[str], changelog_data: Dict, is_russian: bool = False
+) -> None:
+    """Append categorized or legacy flat changelog entries to markdown content."""
+    flat_key = "Изменения" if is_russian else "Changes"
+    heading_idx = 3 if is_russian else 2
+    key_idx = 1 if is_russian else 0
+
+    if changelog_uses_categories(changelog_data, is_russian=is_russian):
+        for section in _CHANGELOG_SECTIONS:
+            key = section[key_idx]
+            if key not in changelog_data or not _section_has_items(changelog_data[key]):
+                continue
+            content.append(f"### {section[heading_idx]}")
+            content.append("")
+            _append_change_items(content, changelog_data[key])
+            content.append("")
+        return
+
+    if flat_key in changelog_data:
+        _append_change_items(content, changelog_data[flat_key])
+        content.append("")
+
+
 def generate_markdown_content(files: List[str], changelog_dir: str, is_russian: bool = False) -> str:
     """Generates markdown file content."""
     content = []
@@ -171,18 +255,22 @@ def generate_markdown_content(files: List[str], changelog_dir: str, is_russian: 
         content.append(f"## {version}")
         content.append("")
 
-        # Add changes
-        changes_key = "Изменения" if is_russian else "Changes"
-        if changes_key in changelog_data:
-            changes = changelog_data[changes_key]
-            if isinstance(changes, list):
-                for change in changes:
-                    content.append(f"* {change}")
-            else:
-                content.append(f"* {changes}")
-        content.append("")
+        append_changelog_sections(content, changelog_data, is_russian=is_russian)
 
     return "\n".join(content)
+
+
+def validate_changelog_files(files: List[str], is_russian: bool = False) -> List[str]:
+    """Validate categorized changelogs; return error messages (empty if all ok)."""
+    errors: List[str] = []
+    for filepath in files:
+        data = load_changelog_file(filepath)
+        if not data:
+            continue
+        err = validate_required_sections(filepath, data, is_russian=is_russian)
+        if err:
+            errors.append(err)
+    return errors
 
 
 def remove_existing_files(output_dir: str):
@@ -261,12 +349,17 @@ def main():
             print(f"Error creating file {ru_output_path}: {e}")
             return 1
 
+    section_errors = validate_changelog_files(en_files, is_russian=False)
+    section_errors.extend(validate_changelog_files(ru_files, is_russian=True))
     ok, err_msg = check_changelog_matches_version_file(en_files, project_root)
-    if not ok:
+    if section_errors or not ok:
         sys.stdout.flush()
-        print(err_msg, file=sys.stderr)
+        for err in section_errors:
+            print(err, file=sys.stderr)
+        if not ok:
+            print(err_msg, file=sys.stderr)
         print(
-            "Release notes files were still written; fix the mismatch and re-run.",
+            "Release notes files were still written; fix the issues and re-run.",
             file=sys.stderr,
         )
         return 1
