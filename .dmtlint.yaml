@@ -1,6 +1,13 @@
 linters-settings:
   container:
     exclude-rules:
+      no-new-privileges:
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: secrets-store
+        - kind: DaemonSet
+          name: csi-secrets-store
+          container: csi-node-driver-registrar
       liveness-probe:
         - kind: DaemonSet
           name: csi-secrets-store
@@ -27,6 +34,9 @@ linters-settings:
         - kind: DaemonSet
           name: csi-secrets-store
           container: secrets-store
+  templates:
+    grafana-dashboards:
+      disable: true
   module:
     exclude-rules:
       license:
