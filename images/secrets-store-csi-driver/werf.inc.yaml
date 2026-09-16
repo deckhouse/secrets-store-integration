@@ -39,7 +39,7 @@ shell:
   install:
   - cd /src
   - export GOPROXY=$(cat /run/secrets/GOPROXY) GOOS=linux GOARCH=amd64 CGO_ENABLED=0
-  - export LDFLAGS="-s -w -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildVersion=v1.4.0 -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.Vcs=fe"
+  - export LDFLAGS="-s -w -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.BuildVersion=v1.5.3 -X sigs.k8s.io/secrets-store-csi-driver/pkg/version.Vcs=fe"
   - |
     {{- include "image-build.build" (set $ "BuildCommand" (printf `go build -ldflags="$LDFLAGS" -o %s ./cmd/secrets-store-csi-driver` $.ImageName)) | nindent 4 }}
 secrets:
