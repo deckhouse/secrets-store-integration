@@ -2,6 +2,16 @@
 title: "Release Notes"
 ---
 
+## v1.4.5
+
+### Highlights
+
+* This release fixes CVE-2026-81870
+
+### Security updates
+
+* Fixed CVE-2026-81870
+
 ## v1.4.4
 
 ### Highlights
