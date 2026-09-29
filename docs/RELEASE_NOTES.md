@@ -2,6 +2,20 @@
 title: "Release Notes"
 ---
 
+## v1.3.23
+
+### Highlights
+
+* Security updates
+
+### Security updates
+
+* Fixed CVE-2026-81870
+
+### Dependencies
+
+* Update env-injector binary residence path
+
 ## v1.3.22
 
 ### Highlights
