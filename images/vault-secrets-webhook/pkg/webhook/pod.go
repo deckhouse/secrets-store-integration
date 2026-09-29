@@ -386,7 +386,7 @@ func getInitContainers(originalContainers []corev1.Container, podSecurityContext
 			Name:            "copy-env-injector",
 			Image:           vaultConfig.EnvImage,
 			ImagePullPolicy: vaultConfig.EnvImagePullPolicy,
-			Command:         []string{"/bin/env-injector", "--self-copy"},
+			Command:         []string{"/usr/bin/env-injector", "--self-copy"},
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      VaultEnvVolumeName,

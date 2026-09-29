@@ -159,7 +159,7 @@ spec:
         image: {{ include "helm_lib_module_image" (list . "envInjector") }}
         {{- include "helm_lib_module_container_security_context_pss_restricted_flexible" (dict "ro" true "seccompProfile" true) | nindent 8 }}
         command:
-        - /bin/env-injector
+        - /usr/bin/env-injector
         - --dummy-run
         resources:
           requests:

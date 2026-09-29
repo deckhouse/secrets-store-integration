@@ -211,7 +211,7 @@ func main() {
 	}
 
 	if len(os.Args) == 2 && os.Args[1] == "--self-copy" {
-		source, err := os.Open("/bin/env-injector") //open the source file
+		source, err := os.Open("/usr/bin/env-injector") //open the source file
 		if err != nil {
 			logger.Error(err.Error())
 			os.Exit(1)
