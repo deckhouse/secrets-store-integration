@@ -2,6 +2,17 @@
 title: "Release Notes"
 ---
 
+## v1.4.6
+
+### Highlights
+
+* Security updates
+
+### Security updates
+
+* Fixes CVE-2026-56857, CVE-2026-56866, CVE-2026-78659, CVE-2026-78660, CVE-2026-78663, CVE-2026-78667, CVE-2026-78669, CVE-2026-81870, CVE-2026-94439, CVE-2026-94440, CVE-2026-94448, CVE-2026-97030, CVE-2026-97031, CVE-2026-97032
+* Update base images to v3.1.10 (golang v1.27.2)
+
 ## v1.4.5
 
 ### Highlights
@@ -58,6 +69,17 @@ title: "Release Notes"
 * Removed bank-vaults dependencies
 * Removed custom transit engine secret decode
 * Updated documentation, added usage examples
+
+## v1.3.24
+
+### Highlights
+
+* Security updates
+
+### Security updates
+
+* Fixes CVE-2026-56857, CVE-2026-56866, CVE-2026-78659, CVE-2026-78660, CVE-2026-78663, CVE-2026-78667, CVE-2026-78669, CVE-2026-94439, CVE-2026-94440, CVE-2026-94448, CVE-2026-97030, CVE-2026-97031, CVE-2026-97032
+* Update base images to v3.1.10 (golang v1.27.2)
 
 ## v1.3.18
 
